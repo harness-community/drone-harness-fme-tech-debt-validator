@@ -835,9 +835,8 @@ class CITestRunner:
     def __init__(self):
         self.commit_before = os.getenv("DRONE_COMMIT_BEFORE", "HEAD")
         self.commit_after = os.getenv("DRONE_COMMIT_AFTER", "HEAD")
-        self.code_changes = self.get_code_changes()
         self.api_base_url = os.getenv("API_BASE_URL", "https://app.harness.io")
-        self.harness_token = os.getenv("HARNESS_API_TOKEN", "none")
+        self.harness_token = os.getenv("PLUGINHARNESS_API_TOKEN", "none")
         self.harness_account = os.getenv("HARNESS_ACCOUNT_ID", "none")
         self.harness_org = os.getenv("HARNESS_ORG_ID", "none")
         self.harness_project = os.getenv("HARNESS_PROJECT_ID", "none")
@@ -868,6 +867,9 @@ class CITestRunner:
         if not self._validate_configuration():
             sys.exit(1)
 
+        # Get code changes after all attributes are set
+        self.code_changes = self.get_code_changes()
+        
         self.flag_data = []
         self.metaFlagData = {}  # Dictionary for fast flag lookup by name
         self.flags_in_code = []

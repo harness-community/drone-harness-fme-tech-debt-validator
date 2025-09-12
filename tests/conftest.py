@@ -3,13 +3,13 @@
 import pytest
 import os
 import tempfile
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_env_vars():
-    """Fixture providing mock environment variables."""
-    return {
+    """Fixture providing mock environment variables that auto-applies to all tests."""
+    env_vars = {
         "DRONE_COMMIT_BEFORE": "abc123",
         "DRONE_COMMIT_AFTER": "def456",
         "HARNESS_API_TOKEN": "test-token",
@@ -23,6 +23,9 @@ def mock_env_vars():
         "PLUGIN_TAG_REMOVE_THESE_FLAGS": "deprecated,remove",
         "PLUGIN_TAG_PERMANENT_FLAGS": "permanent,keep",
     }
+    
+    with patch.dict(os.environ, env_vars):
+        yield env_vars
 
 
 @pytest.fixture

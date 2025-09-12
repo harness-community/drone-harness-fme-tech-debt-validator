@@ -13,23 +13,12 @@ class TestCITestRunnerInitialization:
 
     @patch.dict(os.environ, {}, clear=True)
     def test_default_configuration(self):
-        """Test default configuration values."""
-        with patch("app.main.get_client"), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ), patch.object(
-            CITestRunner, "get_code_changes", return_value=[]
-        ):
-
-            runner = CITestRunner()
-
-            assert runner.commit_before == "HEAD"
-            assert runner.commit_after == "HEAD"
-            assert runner.production_environment_name == "Production"
-            assert runner.max_flags_in_project == "-1"
-            assert runner.flag_last_modified_threshold == "-1"
-            assert runner.flag_last_traffic_threshold == "-1"
+        """Test that missing environment variables trigger validation error."""
+        with pytest.raises(SystemExit) as exc_info:
+            CITestRunner()
+        
+        # Should exit with code 1 due to missing required environment variables
+        assert exc_info.value.code == 1
 
     def test_environment_variable_configuration(self, mock_env_vars):
         """Test configuration from environment variables."""
@@ -149,23 +138,58 @@ class TestCodeAnalysis:
     """Test code analysis functionality."""
 
     def test_git_diff_integration(self):
-        """Test integration with git diff."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.stdout = "file1.js\nfile2.py\nfile3.java"
-            mock_run.return_value.returncode = 0
+        """Test integration with git diff fallback."""
+        # Mock environment to skip Harness API and test fallback
+        # Clear repo name to force fallback to subprocess
+        with patch.dict(os.environ, {"DRONE_REPO_NAME": "", "HARNESS_REPO_NAME": ""}, clear=False):
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value.stdout = "file1.js\nfile2.py\nfile3.java"
+                mock_run.return_value.returncode = 0
 
-            with patch("app.main.get_client"), patch.object(
-                CITestRunner, "get_flags", return_value=True
-            ), patch.object(
-                CITestRunner, "get_feature_flags_in_code", return_value=True
-            ):
+                with patch("app.main.get_client"), patch.object(
+                    CITestRunner, "get_flags", return_value=True
+                ), patch.object(
+                    CITestRunner, "get_feature_flags_in_code", return_value=True
+                ):
 
-                runner = CITestRunner()
-                changes = runner.get_code_changes()
+                    runner = CITestRunner()
+                    changes = runner.get_code_changes()
 
-                assert "file1.js" in changes
-                assert "file2.py" in changes
-                assert "file3.java" in changes
+                    assert "file1.js" in changes
+                    assert "file2.py" in changes
+                    assert "file3.java" in changes
+
+    def test_harness_api_integration(self):
+        """Test integration with Harness Code Repository API."""
+        mock_response_data = [
+            {"path": "app/feature.js", "status": "MODIFIED"},
+            {"path": "test/feature.test.js", "status": "ADDED"},
+            {"path": "docs/readme.md", "status": "MODIFIED"}
+        ]
+        
+        with patch.dict(os.environ, {
+            "DRONE_REPO_NAME": "test-repo",
+            "HARNESS_API_TOKEN": "test-token", 
+            "HARNESS_ACCOUNT_ID": "test-account",
+            "HARNESS_ORG_ID": "test-org",
+            "HARNESS_PROJECT_ID": "test-project"
+        }):
+            with patch("requests.get") as mock_get:
+                mock_get.return_value.json.return_value = mock_response_data
+                mock_get.return_value.raise_for_status.return_value = None
+                
+                with patch("app.main.get_client"), patch.object(
+                    CITestRunner, "get_flags", return_value=True
+                ), patch.object(
+                    CITestRunner, "get_feature_flags_in_code", return_value=True
+                ):
+                    runner = CITestRunner()
+                    changes = runner.get_code_changes()
+                    
+                    assert "app/feature.js" in changes
+                    assert "test/feature.test.js" in changes
+                    assert "docs/readme.md" in changes
+                    assert len(changes) == 3
 
     def test_file_analysis_integration(self, sample_javascript_code):
         """Test full file analysis pipeline."""
@@ -254,11 +278,16 @@ class TestValidationChecks:
             CITestRunner, "get_flags", return_value=True
         ), patch.object(
             CITestRunner, "get_feature_flags_in_code", return_value=True
+        ), patch.object(
+            CITestRunner, "get_code_changes", return_value=["test-file.js"]
         ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
             runner.remove_these_flags_tag = "deprecated,remove"
+            
+            # Initialize flag_file_mapping which is needed by the method
+            runner.flag_file_mapping = {"test-flag": ["test-file.js"]}
 
             # Mock flag with removal tag
             flag_meta = Mock()

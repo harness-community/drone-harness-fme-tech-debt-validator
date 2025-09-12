@@ -280,7 +280,7 @@ class TestEdgeCaseValues:
     """Test edge case values and boundary conditions."""
 
     def test_empty_environment_variables(self):
-        """Test handling of empty environment variables."""
+        """Test handling of empty environment variables triggers validation error."""
         with patch.dict(
             "os.environ",
             {
@@ -288,18 +288,12 @@ class TestEdgeCaseValues:
                 "HARNESS_ACCOUNT_ID": "",
                 "PLUGIN_MAX_FLAGS_IN_PROJECT": "",
             },
-        ), patch("app.main.get_client"), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
         ):
-
-            runner = CITestRunner()
-
-            # Should handle empty values gracefully
-            assert runner.harness_token == ""
-            assert runner.harness_account == ""
-            assert runner.max_flags_in_project == ""
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            # Should exit with code 1 due to empty required environment variables
+            assert exc_info.value.code == 1
 
     def test_invalid_duration_format(self):
         """Test handling of invalid duration formats."""
