@@ -47,7 +47,6 @@ pipeline:
                     tags:
                       - latest
                     caching: true
-                    dockerfile: Dockerfile
                     registryRef: ci-build
                   timeout: ""
                   type: BuildAndPushDockerRegistry
