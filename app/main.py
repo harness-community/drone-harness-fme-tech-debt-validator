@@ -1161,7 +1161,7 @@ class CITestRunner:
                     "x-api-key": api_token,
                     "Harness-Account": account_id
                 }
-                querystring = {"accountIdentifier": account_id,"orgIdentifier": org_id,"projectIdentifier": project_id}
+                querystring = {"accountIdentifier": account_id, "orgIdentifier": org_id, "projectIdentifier": project_id}
                 
                 logger.info(f"Fetching changes from Harness API: {self.commit_before}...{self.commit_after}")
                 response = requests.get(url, headers=headers, params=querystring)
