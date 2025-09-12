@@ -74,8 +74,7 @@ class ErrorMessageFormatter:
 ║    rg "{flag}" --type js --type java --type py
 ║ 
 ║ 📖 DOCUMENTATION:
-║    Flag Removal Guide: https://docs.harness.io/article/removing-flags
-║    Best Practices: https://docs.harness.io/article/flag-lifecycle
+║    Best Practices: https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
 ╚══════════════════════════════════════════════════════════════════════""".format(
             flag=flag_name
         )
@@ -111,7 +110,7 @@ class ErrorMessageFormatter:
 ║    • Archive flags not used in production
 ║ 
 ║ 📖 GOVERNANCE GUIDE:
-║    Flag Management: https://docs.harness.io/article/flag-governance
+║    Flag Management: https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod
@@ -152,8 +151,7 @@ class ErrorMessageFormatter:
 ║    • Verify with product/engineering teams
 ║ 
 ║ 📖 RESOURCES:
-║    Flag Lifecycle: https://docs.harness.io/article/flag-lifecycle
-║    Stale Flag Management: https://docs.harness.io/article/stale-flags
+║    Flag Lifecycle: https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod
@@ -185,11 +183,11 @@ class ErrorMessageFormatter:
 ║ 
 ║ 🌐 NETWORK DIAGNOSTICS:
 ║    curl -H "x-api-key: $HARNESS_API_TOKEN" \\
-║         https://app.harness.io/gateway/cf/admin/projects
+║         https://app.harness.io/ng/api/projects
 ║ 
 ║ 📖 HARNESS API DOCS:
-║    Authentication: https://docs.harness.io/article/api-authentication
-║    Troubleshooting: https://docs.harness.io/article/api-troubleshooting
+║    Authentication: https://developer.harness.io/docs/platform/automation/api/api-permissions-reference
+║    Getting Started: https://developer.harness.io/docs/platform/automation/api/api-quickstart
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod
@@ -215,23 +213,15 @@ class ErrorMessageFormatter:
 ║ 🔑 REQUIRED VARIABLES:
 {required_text}{optional_text}
 ║ 
-║ 📝 EXAMPLE CONFIGURATION:
-║    export HARNESS_API_TOKEN="pat.12..."
-║    export HARNESS_ACCOUNT_ID="your_account_id"
-║    export HARNESS_PROJECT_ID="your_project_id"
 ║ 
-║ 🚀 FOR DRONE CI:
+║ 🚀 FOR DRONE/HARNESS CI:
 ║    steps:
 ║    - name: feature-flag-check
 ║      image: your-registry/feature-flag-ci-plugin
 ║      settings:
 ║        harness_api_token:
 ║          from_secret: harness_token
-║        harness_account_id: your_account_id
-║        harness_project_id: your_project_id
 ║ 
-║ 📖 SETUP GUIDE:
-║    Configuration: https://docs.harness.io/article/ci-plugin-setup
 ╚══════════════════════════════════════════════════════════════════════"""
 
 
@@ -1156,8 +1146,36 @@ class CITestRunner:
             return False
 
     def get_code_changes(self) -> List[str]:
-        """Get list of changed files between commits using GitPython"""
+        """Get list of changed files between commits using Harness Code Repository API"""
         try:
+            # Try Harness Code API first
+            repo_name = os.getenv("DRONE_REPO_NAME") # os.getenv("HARNESS_REPO_NAME") or os.getenv("DRONE_REPO_NAME")
+            api_token = self.harness_token
+            account_id = self.harness_account
+            
+            if repo_name and api_token and account_id:
+                url = f"{self.api_base_url}/code/api/v1/repos/{repo_name}/diff/{self.commit_before}...{self.commit_after}"
+                headers = {
+                    "x-api-key": api_token,
+                    "Harness-Account": account_id
+                }
+                
+                logger.info(f"Fetching changes from Harness API: {self.commit_before}...{self.commit_after}")
+                response = requests.get(url, headers=headers)
+                response.raise_for_status()
+                
+                data = response.json()
+                # Handle both array response and object with 'files' key
+                if isinstance(data, list):
+                    changed_files = [file['path'] for file in data]
+                else:
+                    changed_files = [file['path'] for file in data.get('files', [])]
+                
+                logger.info(f"Found {len(changed_files)} changed files via Harness API")
+                return changed_files
+            
+            # Fallback to GitPython/subprocess
+            logger.warning("Harness API credentials not available, falling back to local git")
             if Repo is None:
                 logger.error("GitPython not available, falling back to subprocess")
                 result = subprocess.run(
@@ -1187,7 +1205,7 @@ class CITestRunner:
             )
             return changed_files
         except Exception as e:
-            logger.error(f"Git diff failed: {e}")
+            logger.error(f"Failed to get code changes: {e}")
             return []
 
     def get_feature_flags_in_code(self) -> bool:
