@@ -5,9 +5,9 @@ import sys
 import logging
 from typing import Dict, List
 
-from .formatters import ErrorMessageFormatter
-from .utils import HarnessApiClient, GitCodeAnalyzer
-from .validators import FlagValidator, ThresholdValidator
+from formatters import ErrorMessageFormatter
+from utils import HarnessApiClient, GitCodeAnalyzer
+from validators import FlagValidator, ThresholdValidator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

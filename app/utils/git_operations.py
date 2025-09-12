@@ -11,7 +11,7 @@ try:
 except ImportError:
     Repo = None
 
-from ..extractors import extract_flags_ast_javascript, extract_flags_ast_java, extract_flags_ast_python, extract_flags_ast_csharp, extract_flags_regex
+from extractors import extract_flags_ast_javascript, extract_flags_ast_java, extract_flags_ast_python, extract_flags_ast_csharp, extract_flags_regex
 
 logger = logging.getLogger(__name__)
 
