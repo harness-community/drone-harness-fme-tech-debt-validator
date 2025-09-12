@@ -1,4 +1,5 @@
 """Test configuration and fixtures."""
+
 import pytest
 import os
 import tempfile
@@ -9,18 +10,18 @@ from unittest.mock import Mock
 def mock_env_vars():
     """Fixture providing mock environment variables."""
     return {
-        'DRONE_COMMIT_BEFORE': 'abc123',
-        'DRONE_COMMIT_AFTER': 'def456',
-        'HARNESS_API_TOKEN': 'test-token',
-        'HARNESS_ACCOUNT_ID': 'test-account',
-        'HARNESS_ORG_ID': 'test-org',
-        'HARNESS_PROJECT_ID': 'test-project',
-        'PLUGIN_PRODUCTION_ENVIRONMENT_NAME': 'Production',
-        'PLUGIN_MAX_FLAGS_IN_PROJECT': '50',
-        'PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD': '90d',
-        'PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD': '30d',
-        'PLUGIN_TAG_REMOVE_THESE_FLAGS': 'deprecated,remove',
-        'PLUGIN_TAG_PERMANENT_FLAGS': 'permanent,keep'
+        "DRONE_COMMIT_BEFORE": "abc123",
+        "DRONE_COMMIT_AFTER": "def456",
+        "HARNESS_API_TOKEN": "test-token",
+        "HARNESS_ACCOUNT_ID": "test-account",
+        "HARNESS_ORG_ID": "test-org",
+        "HARNESS_PROJECT_ID": "test-project",
+        "PLUGIN_PRODUCTION_ENVIRONMENT_NAME": "Production",
+        "PLUGIN_MAX_FLAGS_IN_PROJECT": "50",
+        "PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD": "90d",
+        "PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD": "30d",
+        "PLUGIN_TAG_REMOVE_THESE_FLAGS": "deprecated,remove",
+        "PLUGIN_TAG_PERMANENT_FLAGS": "permanent,keep",
     }
 
 
@@ -28,27 +29,27 @@ def mock_env_vars():
 def mock_harness_client():
     """Fixture providing a mock Harness client."""
     client = Mock()
-    
+
     # Mock workspace
     workspace = Mock()
-    workspace.id = 'workspace-123'
+    workspace.id = "workspace-123"
     client.workspaces.find.return_value = workspace
-    
+
     # Mock flag metadata
     flag_meta = Mock()
-    flag_meta.name = 'test-flag'
-    flag_meta._tags = [Mock(name='production')]
+    flag_meta.name = "test-flag"
+    flag_meta._tags = [Mock(name="production")]
     client.splits.list.return_value = [flag_meta]
-    
+
     # Mock environments
     env = Mock()
-    env.id = 'env-123'
-    env.name = 'Production'
+    env.id = "env-123"
+    env.name = "Production"
     client.environments.list.return_value = [env]
-    
+
     # Mock flag definitions
     flag_def = Mock()
-    flag_def.name = 'test-flag'
+    flag_def.name = "test-flag"
     flag_def.lastUpdateTime = 1640995200  # 2022-01-01
     flag_def.lastTrafficRecievedAt = 1640995200
     flag_def._traffic_allocation = 100
@@ -56,7 +57,7 @@ def mock_harness_client():
     flag_def._default_rule = Mock()
     flag_def._default_rule.buckets = [Mock(size=100)]
     client.split_definitions.list.return_value = [flag_def]
-    
+
     return client
 
 
@@ -64,17 +65,17 @@ def mock_harness_client():
 def mock_git_diff():
     """Fixture providing mock git diff output."""
     return [
-        'src/components/Feature.js',
-        'src/services/api.java',
-        'tests/test_flags.py',
-        'config/settings.cs'
+        "src/components/Feature.js",
+        "src/services/api.java",
+        "tests/test_flags.py",
+        "config/settings.cs",
     ]
 
 
 @pytest.fixture
 def sample_javascript_code():
     """Sample JavaScript code for testing."""
-    return '''
+    return """
     const FEATURE_FLAG = "new-dashboard";
     const USER_ID = "user123";
     
@@ -87,13 +88,13 @@ def sample_javascript_code():
     
     // Non-flag calls (should be filtered out)
     const other = someMethod("not-a-flag");
-    '''
+    """
 
 
 @pytest.fixture
 def sample_javascript_multiple_flags_code():
     """Sample JavaScript code with multiple flag methods for testing."""
-    return '''
+    return """
     const SINGLE_FLAG = "single-feature";
     const FLAG_ARRAY = ["multi-flag-1", "multi-flag-2"];
     const USER_ID = "user123";
@@ -114,13 +115,13 @@ def sample_javascript_multiple_flags_code():
     
     // Non-flag calls (should be filtered out)
     const other = someMethod(["not-a-flag"]);
-    '''
+    """
 
 
 @pytest.fixture
 def sample_java_code():
     """Sample Java code for testing."""
-    return '''
+    return """
     public class FeatureService {
         private static final String FLAG_NAME = "checkout-flow";
         private String userId = "user456";
@@ -136,13 +137,13 @@ def sample_java_code():
             String other = otherMethod("not-a-flag");
         }
     }
-    '''
+    """
 
 
 @pytest.fixture
 def sample_java_multiple_flags_code():
     """Sample Java code with multiple flag methods for testing."""
-    return '''
+    return """
     import java.util.Arrays;
     import java.util.List;
     
@@ -170,13 +171,13 @@ def sample_java_multiple_flags_code():
             List<String> other = otherMethod(Arrays.asList("not-a-flag"));
         }
     }
-    '''
+    """
 
 
 @pytest.fixture
 def sample_python_code():
     """Sample Python code for testing."""
-    return '''
+    return """
     FLAG_NAME = "payment-gateway"
     user_id = "user789"
     
@@ -189,13 +190,13 @@ def sample_python_code():
         
         # Non-flag calls
         other = other_method("not-a-flag")
-    '''
+    """
 
 
 @pytest.fixture
 def sample_python_multiple_flags_code():
     """Sample Python code with multiple flag methods for testing."""
-    return '''
+    return """
     SINGLE_FLAG = "python-single-feature"
     FLAG_LIST = ["python-list-flag-1", "python-list-flag-2"]
     user_id = "user789"
@@ -217,13 +218,13 @@ def sample_python_multiple_flags_code():
         
         # Non-flag calls
         other = other_method(["not-a-flag"])
-    '''
+    """
 
 
 @pytest.fixture
 def sample_csharp_code():
     """Sample C# code for testing."""
-    return '''
+    return """
     public class FeatureService 
     {
         private static readonly string FlagName = "mobile-app";
@@ -241,13 +242,13 @@ def sample_csharp_code():
             var other = OtherMethod("not-a-flag");
         }
     }
-    '''
+    """
 
 
 @pytest.fixture
 def sample_csharp_multiple_flags_code():
     """Sample C# code with multiple flag methods for testing."""
-    return '''
+    return """
     using System.Collections.Generic;
     
     public class FeatureService 
@@ -280,7 +281,7 @@ def sample_csharp_multiple_flags_code():
             var other = OtherMethod(new List<string> { "not-a-flag" });
         }
     }
-    '''
+    """
 
 
 @pytest.fixture
@@ -288,27 +289,27 @@ def temp_git_repo():
     """Create a temporary git repository for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         # Initialize git repo
-        os.system(f'cd {temp_dir} && git init')
+        os.system(f"cd {temp_dir} && git init")
         os.system(f'cd {temp_dir} && git config user.email "test@test.com"')
         os.system(f'cd {temp_dir} && git config user.name "Test User"')
-        
+
         # Create some test files
         test_files = {
-            'src/test.js': 'client.getTreatment("test-flag");',
-            'src/test.java': 'client.getTreatment("java-flag");',
-            'src/test.py': 'client.get_treatment("python-flag");'
+            "src/test.js": 'client.getTreatment("test-flag");',
+            "src/test.java": 'client.getTreatment("java-flag");',
+            "src/test.py": 'client.get_treatment("python-flag");',
         }
-        
+
         for file_path, content in test_files.items():
             full_path = os.path.join(temp_dir, file_path)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, 'w') as f:
+            with open(full_path, "w") as f:
                 f.write(content)
-        
+
         # Initial commit
-        os.system(f'cd {temp_dir} && git add .')
+        os.system(f"cd {temp_dir} && git add .")
         os.system(f'cd {temp_dir} && git commit -m "Initial commit"')
-        
+
         yield temp_dir
 
 
@@ -318,14 +319,7 @@ def mock_requests_response():
     response = Mock()
     response.status_code = 200
     response.json.return_value = {
-        'data': {
-            'content': [
-                {
-                    'identifier': 'test-project',
-                    'name': 'Test Project'
-                }
-            ]
-        }
+        "data": {"content": [{"identifier": "test-project", "name": "Test Project"}]}
     }
     response.raise_for_status.return_value = None
     return response

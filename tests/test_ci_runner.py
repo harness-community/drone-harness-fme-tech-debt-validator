@@ -1,4 +1,5 @@
 """Integration tests for the CI test runner."""
+
 import pytest
 import os
 import tempfile
@@ -9,116 +10,128 @@ from app.main import CITestRunner
 @pytest.mark.integration
 class TestCITestRunnerInitialization:
     """Test CI runner initialization and configuration."""
-    
+
     @patch.dict(os.environ, {}, clear=True)
     def test_default_configuration(self):
         """Test default configuration values."""
-        with patch('app.main.get_client'), \
-             patch.object(CITestRunner, 'get_flags', return_value=True), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True), \
-             patch.object(CITestRunner, 'get_code_changes', return_value=[]):
-            
+        with patch("app.main.get_client"), patch.object(
+            CITestRunner, "get_flags", return_value=True
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ), patch.object(
+            CITestRunner, "get_code_changes", return_value=[]
+        ):
+
             runner = CITestRunner()
-            
-            assert runner.commit_before == 'HEAD'
-            assert runner.commit_after == 'HEAD'
-            assert runner.production_environment_name == 'Production'
-            assert runner.max_flags_in_project == '-1'
-            assert runner.flag_last_modified_threshold == '-1'
-            assert runner.flag_last_traffic_threshold == '-1'
-    
+
+            assert runner.commit_before == "HEAD"
+            assert runner.commit_after == "HEAD"
+            assert runner.production_environment_name == "Production"
+            assert runner.max_flags_in_project == "-1"
+            assert runner.flag_last_modified_threshold == "-1"
+            assert runner.flag_last_traffic_threshold == "-1"
+
     def test_environment_variable_configuration(self, mock_env_vars):
         """Test configuration from environment variables."""
-        with patch.dict(os.environ, mock_env_vars), \
-             patch('app.main.get_client'), \
-             patch.object(CITestRunner, 'get_flags', return_value=True), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True), \
-             patch.object(CITestRunner, 'get_code_changes', return_value=[]):
-            
+        with patch.dict(os.environ, mock_env_vars), patch(
+            "app.main.get_client"
+        ), patch.object(CITestRunner, "get_flags", return_value=True), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ), patch.object(
+            CITestRunner, "get_code_changes", return_value=[]
+        ):
+
             runner = CITestRunner()
-            
-            assert runner.harness_token == 'test-token'
-            assert runner.harness_account == 'test-account'
-            assert runner.production_environment_name == 'Production'
-            assert runner.max_flags_in_project == '50'
-            assert runner.remove_these_flags_tag == 'deprecated,remove'
+
+            assert runner.harness_token == "test-token"
+            assert runner.harness_account == "test-account"
+            assert runner.production_environment_name == "Production"
+            assert runner.max_flags_in_project == "50"
+            assert runner.remove_these_flags_tag == "deprecated,remove"
 
 
 @pytest.mark.integration
 class TestFlagRetrieval:
     """Test flag retrieval from Harness API."""
-    
-    @patch('app.main.requests.get')
-    @patch('app.main.get_client')
-    def test_successful_flag_retrieval(self, mock_get_client, mock_requests, mock_harness_client):
+
+    @patch("app.main.requests.get")
+    @patch("app.main.get_client")
+    def test_successful_flag_retrieval(
+        self, mock_get_client, mock_requests, mock_harness_client
+    ):
         """Test successful flag retrieval from Harness."""
         # Mock requests response
         mock_response = Mock()
         mock_response.json.return_value = {
-            'data': {
-                'content': [
-                    {'identifier': 'test-project', 'name': 'Test Project'}
-                ]
+            "data": {
+                "content": [{"identifier": "test-project", "name": "Test Project"}]
             }
         }
         mock_response.raise_for_status.return_value = None
         mock_requests.return_value = mock_response
-        
+
         # Mock client
         mock_get_client.return_value = mock_harness_client
-        
-        with patch.dict(os.environ, {'HARNESS_PROJECT_ID': 'test-project'}), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True), \
-             patch.object(CITestRunner, 'get_code_changes', return_value=[]):
-            
+
+        with patch.dict(
+            os.environ, {"HARNESS_PROJECT_ID": "test-project"}
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ), patch.object(
+            CITestRunner, "get_code_changes", return_value=[]
+        ):
+
             runner = CITestRunner()
-            
+
             # Verify API calls were made
             mock_requests.assert_called_once()
-            mock_harness_client.workspaces.find.assert_called_once_with('Test Project')
+            mock_harness_client.workspaces.find.assert_called_once_with("Test Project")
             mock_harness_client.splits.list.assert_called_once()
             mock_harness_client.environments.list.assert_called_once()
-    
-    @patch('app.main.requests.get')
-    @patch('app.main.get_client')
+
+    @patch("app.main.requests.get")
+    @patch("app.main.get_client")
     def test_api_error_handling(self, mock_get_client, mock_requests):
         """Test handling of API errors."""
         # Mock failed response
         mock_requests.side_effect = Exception("Network error")
         mock_get_client.return_value = Mock()
-        
-        with patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True), \
-             patch.object(CITestRunner, 'get_code_changes', return_value=[]):
-            
+
+        with patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
+
             runner = CITestRunner()
-            
+
             # Should handle error gracefully
             assert runner.flag_data == []
             assert runner.metaFlagData == {}
-    
-    @patch('app.main.requests.get')
-    @patch('app.main.get_client')
+
+    @patch("app.main.requests.get")
+    @patch("app.main.get_client")
     def test_project_not_found(self, mock_get_client, mock_requests):
         """Test handling when project is not found."""
         # Mock response with different project
         mock_response = Mock()
         mock_response.json.return_value = {
-            'data': {
-                'content': [
-                    {'identifier': 'other-project', 'name': 'Other Project'}
-                ]
+            "data": {
+                "content": [{"identifier": "other-project", "name": "Other Project"}]
             }
         }
         mock_response.raise_for_status.return_value = None
         mock_requests.return_value = mock_response
         mock_get_client.return_value = Mock()
-        
-        with patch.dict(os.environ, {'HARNESS_PROJECT_ID': 'test-project'}), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True), \
-             patch.object(CITestRunner, 'get_code_changes', return_value=[]):
-            
+
+        with patch.dict(
+            os.environ, {"HARNESS_PROJECT_ID": "test-project"}
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ), patch.object(
+            CITestRunner, "get_code_changes", return_value=[]
+        ):
+
             runner = CITestRunner()
-            
+
             # Should handle missing project gracefully
             assert runner.flag_data == []
 
@@ -126,38 +139,40 @@ class TestFlagRetrieval:
 @pytest.mark.integration
 class TestCodeAnalysis:
     """Test code analysis functionality."""
-    
+
     def test_git_diff_integration(self):
         """Test integration with git diff."""
-        with patch('subprocess.run') as mock_run:
-            mock_run.return_value.stdout = 'file1.js\nfile2.py\nfile3.java'
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value.stdout = "file1.js\nfile2.py\nfile3.java"
             mock_run.return_value.returncode = 0
-            
-            with patch('app.main.get_client'), \
-                 patch.object(CITestRunner, 'get_flags', return_value=True), \
-                 patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True):
-                
+
+            with patch("app.main.get_client"), patch.object(
+                CITestRunner, "get_flags", return_value=True
+            ), patch.object(
+                CITestRunner, "get_feature_flags_in_code", return_value=True
+            ):
+
                 runner = CITestRunner()
                 changes = runner.get_code_changes()
-                
-                assert 'file1.js' in changes
-                assert 'file2.py' in changes
-                assert 'file3.java' in changes
-    
+
+                assert "file1.js" in changes
+                assert "file2.py" in changes
+                assert "file3.java" in changes
+
     def test_file_analysis_integration(self, sample_javascript_code):
         """Test full file analysis pipeline."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write(sample_javascript_code)
             temp_file = f.name
-        
+
         try:
-            with patch('app.main.get_client'), \
-                 patch.object(CITestRunner, 'get_flags', return_value=True), \
-                 patch.object(CITestRunner, 'get_code_changes', return_value=[temp_file]):
-                
+            with patch("app.main.get_client"), patch.object(
+                CITestRunner, "get_flags", return_value=True
+            ), patch.object(CITestRunner, "get_code_changes", return_value=[temp_file]):
+
                 runner = CITestRunner()
                 result = runner.get_feature_flags_in_code()
-                
+
                 assert result is True
                 assert len(runner.flags_in_code) > 0
                 assert "simple-flag" in runner.flags_in_code
@@ -168,70 +183,70 @@ class TestCodeAnalysis:
 @pytest.mark.integration
 class TestValidationChecks:
     """Test individual validation checks."""
-    
+
     def test_flag_count_check_pass(self):
         """Test flag count check passing."""
-        with patch('app.main.get_client'), \
-             patch.object(CITestRunner, 'get_flags', return_value=True), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True):
-            
+        with patch("app.main.get_client"), patch.object(
+            CITestRunner, "get_flags", return_value=True
+        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+
             runner = CITestRunner()
-            runner.flags_in_code = ['flag1', 'flag2']
-            runner.max_flags_in_project = '5'
-            
+            runner.flags_in_code = ["flag1", "flag2"]
+            runner.max_flags_in_project = "5"
+
             result = runner.check_if_flag_count_exceeds_limit()
             assert result is True
-    
+
     def test_flag_count_check_fail(self):
         """Test flag count check failing."""
-        with patch('app.main.get_client'), \
-             patch.object(CITestRunner, 'get_flags', return_value=True), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True):
-            
+        with patch("app.main.get_client"), patch.object(
+            CITestRunner, "get_flags", return_value=True
+        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+
             runner = CITestRunner()
-            runner.flags_in_code = ['flag1', 'flag2', 'flag3']
-            runner.max_flags_in_project = '2'
-            
+            runner.flags_in_code = ["flag1", "flag2", "flag3"]
+            runner.max_flags_in_project = "2"
+
             result = runner.check_if_flag_count_exceeds_limit()
             assert result is False
-    
+
     def test_removal_tag_check_pass(self):
         """Test removal tag check passing."""
-        with patch('app.main.get_client'), \
-             patch.object(CITestRunner, 'get_flags', return_value=True), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True):
-            
+        with patch("app.main.get_client"), patch.object(
+            CITestRunner, "get_flags", return_value=True
+        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+
             runner = CITestRunner()
-            runner.flags_in_code = ['test-flag']
-            runner.remove_these_flags_tag = 'deprecated,remove'
-            
+            runner.flags_in_code = ["test-flag"]
+            runner.remove_these_flags_tag = "deprecated,remove"
+
             # Mock flag without removal tags
             flag_meta = Mock()
             production_tag = Mock()
-            production_tag.name = 'production'
+            production_tag.name = "production"
             flag_meta._tags = [production_tag]
-            runner.metaFlagData = {'test-flag': flag_meta}
-            
+            runner.metaFlagData = {"test-flag": flag_meta}
+
             result = runner.check_if_flags_have_remove_these_tags()
             assert result is True
-    
+
     def test_removal_tag_check_fail(self):
         """Test removal tag check failing."""
-        with patch('app.main.get_client'), \
-             patch.object(CITestRunner, 'get_flags', return_value=True), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True):
-            
+        with patch("app.main.get_client"), patch.object(
+            CITestRunner, "get_flags", return_value=True
+        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+
             runner = CITestRunner()
-            runner.flags_in_code = ['test-flag']
-            runner.remove_these_flags_tag = 'deprecated,remove'
-            
+            runner.flags_in_code = ["test-flag"]
+            runner.remove_these_flags_tag = "deprecated,remove"
+
             # Mock flag with removal tag
             flag_meta = Mock()
             deprecated_tag = Mock()
-            deprecated_tag.name = 'deprecated'
+            deprecated_tag.name = "deprecated"
             flag_meta._tags = [deprecated_tag]
-            runner.metaFlagData = {'test-flag': flag_meta}
-            
+            runner.metaFlagData = {"test-flag": flag_meta}
+
             result = runner.check_if_flags_have_remove_these_tags()
             assert result is False
 
@@ -239,80 +254,83 @@ class TestValidationChecks:
 @pytest.mark.integration
 class TestFullWorkflow:
     """Test complete CI workflow integration."""
-    
-    @patch('app.main.get_client')
-    @patch('app.main.requests.get')
-    def test_successful_complete_workflow(self, mock_requests, mock_get_client, mock_harness_client):
+
+    @patch("app.main.get_client")
+    @patch("app.main.requests.get")
+    def test_successful_complete_workflow(
+        self, mock_requests, mock_get_client, mock_harness_client
+    ):
         """Test complete successful workflow."""
         # Mock API responses
         mock_response = Mock()
         mock_response.json.return_value = {
-            'data': {
-                'content': [
-                    {'identifier': 'test-project', 'name': 'Test Project'}
-                ]
+            "data": {
+                "content": [{"identifier": "test-project", "name": "Test Project"}]
             }
         }
         mock_response.raise_for_status.return_value = None
         mock_requests.return_value = mock_response
         mock_get_client.return_value = mock_harness_client
-        
+
         # Create temporary test file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
             f.write('client.getTreatment("test-flag");')
             temp_file = f.name
-        
+
         try:
-            with patch.dict(os.environ, {'HARNESS_PROJECT_ID': 'test-project'}), \
-                 patch.object(CITestRunner, 'get_code_changes', return_value=[temp_file]):
-                
+            with patch.dict(
+                os.environ, {"HARNESS_PROJECT_ID": "test-project"}
+            ), patch.object(CITestRunner, "get_code_changes", return_value=[temp_file]):
+
                 runner = CITestRunner()
                 result = runner.run_tests()
-                
+
                 # Should pass all tests
                 assert result is True
-                assert 'test-flag' in runner.flags_in_code
+                assert "test-flag" in runner.flags_in_code
         finally:
             os.unlink(temp_file)
-    
+
     def test_failed_workflow_flag_count(self):
         """Test workflow failing on flag count."""
-        with patch('app.main.get_client'), \
-             patch.object(CITestRunner, 'get_flags', return_value=True), \
-             patch.object(CITestRunner, 'get_feature_flags_in_code', return_value=True):
-            
+        with patch("app.main.get_client"), patch.object(
+            CITestRunner, "get_flags", return_value=True
+        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+
             runner = CITestRunner()
-            runner.flags_in_code = ['flag1', 'flag2', 'flag3']
-            runner.max_flags_in_project = '2'
+            runner.flags_in_code = ["flag1", "flag2", "flag3"]
+            runner.max_flags_in_project = "2"
             runner.metaFlagData = {}
-            
+
             result = runner.run_tests()
             assert result is False
-    
-    @patch('app.main.sys.exit')
+
+    @patch("app.main.sys.exit")
     def test_main_function_success(self, mock_exit):
         """Test main function with successful execution."""
-        with patch('app.main.CITestRunner') as mock_runner_class:
+        with patch("app.main.CITestRunner") as mock_runner_class:
             mock_runner = Mock()
             mock_runner.run_tests.return_value = True
             mock_runner_class.return_value = mock_runner
-            
+
             from app.main import main
+
             main()
-            
+
             mock_exit.assert_called_once_with(0)
-    
-    @patch('app.main.sys.exit')
+
+    @patch("app.main.sys.exit")
     def test_main_function_failure(self, mock_exit):
         """Test main function with failed execution."""
-        with patch('app.main.CITestRunner') as mock_runner_class:
+        with patch("app.main.CITestRunner") as mock_runner_class:
             mock_runner = Mock()
             mock_runner.run_tests.return_value = False
             mock_runner_class.return_value = mock_runner
-            
+
             from app.main import main
+
             main()
-            
+
             mock_exit.assert_called_once_with(1)
 
 
@@ -320,38 +338,39 @@ class TestFullWorkflow:
 @pytest.mark.slow
 class TestRealGitIntegration:
     """Test integration with real git repository."""
-    
+
     def test_real_git_diff(self, temp_git_repo):
         """Test with real git repository."""
         # Change to temp repo directory
         original_dir = os.getcwd()
         os.chdir(temp_git_repo)
-        
+
         try:
             # Create new file and commit
-            with open('new_feature.js', 'w') as f:
+            with open("new_feature.js", "w") as f:
                 f.write('client.getTreatment("new-feature");')
-            
-            os.system('git add new_feature.js')
+
+            os.system("git add new_feature.js")
             os.system('git commit -m "Add new feature"')
-            
+
             # Test git diff
-            with patch('app.main.get_client'), \
-                 patch.object(CITestRunner, 'get_flags', return_value=True):
-                
+            with patch("app.main.get_client"), patch.object(
+                CITestRunner, "get_flags", return_value=True
+            ):
+
                 runner = CITestRunner()
-                runner.commit_before = 'HEAD~1'
-                runner.commit_after = 'HEAD'
+                runner.commit_before = "HEAD~1"
+                runner.commit_after = "HEAD"
                 # Re-initialize code changes with new commit values
                 runner.code_changes = runner.get_code_changes()
-                
+
                 changes = runner.code_changes
-                assert 'new_feature.js' in changes
-                
+                assert "new_feature.js" in changes
+
                 # Test flag extraction
                 result = runner.get_feature_flags_in_code()
                 assert result is True
-                assert 'new-feature' in runner.flags_in_code
-        
+                assert "new-feature" in runner.flags_in_code
+
         finally:
             os.chdir(original_dir)
