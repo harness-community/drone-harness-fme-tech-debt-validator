@@ -873,11 +873,11 @@ class CITestRunner:
         self.flag_data = []
         self.metaFlagData = {}  # Dictionary for fast flag lookup by name
         self.flags_in_code = []
-        self.client = get_client(
-            harness_mode=True,
-            harness_token=self.harness_token,
-            account_identifier=self.harness_account,
-        )
+        self.client = get_client({
+            "harness_mode": True,
+            "harness_token": self.harness_token,
+            "account_identifier": self.harness_account,
+        })
 
         # Initialize data - will be populated by separate method calls
         if not self.get_flags():
