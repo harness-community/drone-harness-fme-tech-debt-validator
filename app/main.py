@@ -1537,7 +1537,7 @@ class CITestRunner:
     def run_tests(self) -> bool:
         """Run all tests and return overall success status"""
         logger.info("Starting CI test run...")
-        logger.info(f"Configuration:")
+        logger.info("Configuration:")
         logger.info(f"  API Base URL: {self.api_base_url}")
         logger.info(f"  Feature Flags in Code: {self.flags_in_code}")
         logger.info(f"  Feature Flags in Harness: {self.flag_data}")
