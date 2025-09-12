@@ -966,7 +966,12 @@ class CITestRunner:
     def get_flags(self):
         try:
             # Fetch projects with timeout and error handling
-            url = f"{self.api_base_url}/ng/api/projects/{self.harness_project}?accountIdentifier={self.harness_account}&orgIdentifier={self.harness_org}"
+            url = (
+                f"{self.api_base_url}/ng/api/projects/{self.harness_project}"
+                f"?accountIdentifier={self.harness_account}"
+                f"&orgIdentifier={self.harness_org}"
+            )
+
             headers = {"x-api-key": self.harness_token}
 
             logger.info(f"Fetching projects from Harness API: {url}")
