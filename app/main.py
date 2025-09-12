@@ -23,6 +23,11 @@ except ImportError:
     javalang = None
 
 try:
+    from git import Repo
+except ImportError:
+    Repo = None
+
+try:
     import tree_sitter
 except ImportError:
     tree_sitter = None
@@ -1151,30 +1156,37 @@ class CITestRunner:
             return False
 
     def get_code_changes(self) -> List[str]:
-        """Get list of changed files between commits using git diff"""
+        """Get list of changed files between commits using GitPython"""
         try:
-            result = subprocess.run(
-                [
-                    "git",
-                    "diff",
-                    "--name-only",
-                    self.commit_before,
-                    self.commit_after,
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            changed_files = (
-                result.stdout.strip().split("\n")
-                if result.stdout.strip()
-                else []
-            )
+            if Repo is None:
+                logger.error("GitPython not available, falling back to subprocess")
+                result = subprocess.run(
+                    [
+                        "git",
+                        "diff",
+                        "--name-only",
+                        self.commit_before,
+                        self.commit_after,
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                changed_files = (
+                    result.stdout.strip().split("\n")
+                    if result.stdout.strip()
+                    else []
+                )
+            else:
+                repo = Repo('.')
+                diff_output = repo.git.diff('--name-only', self.commit_before, self.commit_after)
+                changed_files = diff_output.strip().split('\n') if diff_output.strip() else []
+            
             logger.info(
                 f"Found {len(changed_files)} changed files between {self.commit_before} and {self.commit_after}"
             )
             return changed_files
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             logger.error(f"Git diff failed: {e}")
             return []
 
