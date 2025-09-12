@@ -21,11 +21,12 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
-COPY . .
+# Copy app source code to /app
+COPY app/ .
 
-RUN ls -la /app/
-RUN find /app -name "*.py"
+# Copy test files and config
+COPY tests/ tests/
+COPY pytest.ini .
 
 # Command to run the CI test script
-CMD ["python", "/app/main.py"]
+CMD ["python", "main.py"]
