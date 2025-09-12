@@ -22,9 +22,11 @@ pipeline:
                   identifier: runlinter
                   name: run linter
                   spec:
+                    shell: Sh
                     command: |-
                       pip install flake8
-                      flake8 .
+                      flake8 . --max-line-length=88 --extend-ignore=E203,W503
+                        --exclude=.venv
                   timeout: ""
                   type: Run
               - step:
