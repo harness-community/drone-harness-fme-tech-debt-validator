@@ -221,27 +221,49 @@ def extract_flags_ast_javascript(content: str) -> List[str]:
         
         def walk_node(node):
             if hasattr(node, 'type'):
-                # Variable declarations: const FLAG_NAME = "my-flag"
+                # Variable declarations: const FLAG_NAME = "my-flag" or const FLAG_ARRAY = ["flag1", "flag2"]
                 if getattr(node, 'type') == 'VariableDeclaration':
                     for decl in getattr(node, 'declarations', []):
                         if (hasattr(decl, 'id') and getattr(decl.id, 'type', None) == 'Identifier' and 
-                            hasattr(decl, 'init') and getattr(decl.init, 'type', None) == 'Literal' and
-                            isinstance(getattr(decl.init, 'value', None), str)):
+                            hasattr(decl, 'init')):
                             var_name = decl.id.name
-                            var_value = decl.init.value
-                            variables[var_name] = var_value
+                            
+                            # Handle string literal variables
+                            if (getattr(decl.init, 'type', None) == 'Literal' and
+                                isinstance(getattr(decl.init, 'value', None), str)):
+                                variables[var_name] = decl.init.value
+                            
+                            # Handle array literal variables: const FLAG_ARRAY = ["flag1", "flag2"]
+                            elif getattr(decl.init, 'type', None) == 'ArrayExpression':
+                                array_values = []
+                                for element in getattr(decl.init, 'elements', []):
+                                    if getattr(element, 'type', None) == 'Literal' and isinstance(getattr(element, 'value', None), str):
+                                        array_values.append(element.value)
+                                if array_values:  # Only store if we found string values
+                                    variables[var_name] = array_values
                             
                 # Method calls: getTreatment(FLAG_NAME) - extract all string arguments
                 elif getattr(node, 'type') == 'CallExpression':
                     callee = getattr(node, 'callee', None)
                     if (callee and getattr(callee, 'type', None) == 'MemberExpression' and
-                        hasattr(callee, 'property') and getattr(callee.property, 'name', None) in ['getTreatment', 'treatment', 'getTreatmentWithConfig']):
+                        hasattr(callee, 'property') and getattr(callee.property, 'name', None) in ['getTreatment', 'treatment', 'getTreatmentWithConfig', 'getTreatments', 'getTreatmentsWithConfig']):
                         # Extract all string arguments - safer approach for different SDK signatures
                         for arg in getattr(node, 'arguments', []):
                             if getattr(arg, 'type', None) == 'Literal' and isinstance(getattr(arg, 'value', None), str):
                                 flags.append(arg.value)
                             elif getattr(arg, 'type', None) == 'Identifier' and getattr(arg, 'name', None) in variables:
-                                flags.append(variables[arg.name])
+                                var_value = variables[arg.name]
+                                if isinstance(var_value, str):
+                                    flags.append(var_value)
+                                elif isinstance(var_value, list):
+                                    flags.extend(var_value)  # Add all flags from array variable
+                            elif getattr(arg, 'type', None) == 'ArrayExpression':
+                                # Handle array literals: ['flag1', 'flag2', 'flag3']
+                                for element in getattr(arg, 'elements', []):
+                                    if getattr(element, 'type', None) == 'Literal' and isinstance(getattr(element, 'value', None), str):
+                                        flags.append(element.value)
+                                    elif getattr(element, 'type', None) == 'Identifier' and getattr(element, 'name', None) in variables:
+                                        flags.append(variables[element.name])
                                 
             # Recursively walk child nodes
             if hasattr(node, '__dict__'):
@@ -271,7 +293,7 @@ def extract_flags_ast_java(content: str) -> List[str]:
         flags = []
         
         for path, node in tree:
-            # Variable declarations: String FLAG_NAME = "my-flag";
+            # Variable declarations: String FLAG_NAME = "my-flag"; or List<String> flags = Arrays.asList("flag1", "flag2");
             if isinstance(node, javalang.tree.VariableDeclarator):
                 if (isinstance(node.initializer, javalang.tree.Literal) and
                     isinstance(node.initializer.value, str) and
@@ -279,10 +301,22 @@ def extract_flags_ast_java(content: str) -> List[str]:
                     # Remove quotes from string literal
                     flag_value = node.initializer.value[1:-1]
                     variables[node.name] = flag_value
+                elif isinstance(node.initializer, javalang.tree.MethodInvocation):
+                    # Handle Arrays.asList("flag1", "flag2") in variable declarations
+                    if (hasattr(node.initializer, 'member') and node.initializer.member == 'asList' and
+                        hasattr(node.initializer, 'qualifier') and isinstance(node.initializer.qualifier, str) and 
+                        node.initializer.qualifier == 'Arrays'):
+                        array_values = []
+                        for list_arg in node.initializer.arguments:
+                            if isinstance(list_arg, javalang.tree.Literal) and isinstance(list_arg.value, str):
+                                flag_value = list_arg.value[1:-1] if list_arg.value.startswith('"') else list_arg.value
+                                array_values.append(flag_value)
+                        if array_values:
+                            variables[node.name] = array_values
                     
             # Method calls: client.getTreatment(FLAG_NAME) - extract all string arguments
             elif isinstance(node, javalang.tree.MethodInvocation):
-                if node.member in ['getTreatment', 'treatment', 'getTreatmentWithConfig']:
+                if node.member in ['getTreatment', 'treatment', 'getTreatmentWithConfig', 'getTreatments', 'getTreatmentsWithConfig']:
                     # Extract all string arguments - safer approach for different SDK signatures
                     for arg in node.arguments:
                         if isinstance(arg, javalang.tree.Literal) and isinstance(arg.value, str):
@@ -290,7 +324,36 @@ def extract_flags_ast_java(content: str) -> List[str]:
                             flag_value = arg.value[1:-1] if arg.value.startswith('"') else arg.value
                             flags.append(flag_value)
                         elif isinstance(arg, javalang.tree.MemberReference) and arg.member in variables:
-                            flags.append(variables[arg.member])
+                            var_value = variables[arg.member]
+                            if isinstance(var_value, str):
+                                flags.append(var_value)
+                            elif isinstance(var_value, list):
+                                flags.extend(var_value)  # Add all flags from array variable
+                        elif isinstance(arg, javalang.tree.MethodInvocation):
+                            # Handle Arrays.asList("flag1", "flag2", "flag3")
+                            if (hasattr(arg, 'member') and arg.member == 'asList'):
+                                # Check for Arrays.asList pattern - qualifier can be a string
+                                is_arrays_aslist = False
+                                if hasattr(arg, 'qualifier'):
+                                    if isinstance(arg.qualifier, str) and arg.qualifier == 'Arrays':
+                                        is_arrays_aslist = True
+                                    elif isinstance(arg.qualifier, javalang.tree.MemberReference) and arg.qualifier.member == 'Arrays':
+                                        is_arrays_aslist = True
+                                    elif hasattr(arg.qualifier, 'value') and arg.qualifier.value == 'Arrays':
+                                        is_arrays_aslist = True
+                                
+                                if is_arrays_aslist:
+                                    for list_arg in arg.arguments:
+                                        if isinstance(list_arg, javalang.tree.Literal) and isinstance(list_arg.value, str):
+                                            flag_value = list_arg.value[1:-1] if list_arg.value.startswith('"') else list_arg.value
+                                            flags.append(flag_value)
+                        elif isinstance(arg, javalang.tree.ArrayCreator):
+                            # Handle array literals: new String[]{"flag1", "flag2", "flag3"} (fallback)
+                            if hasattr(arg, 'initializer') and hasattr(arg.initializer, 'initializers'):
+                                for element in arg.initializer.initializers:
+                                    if isinstance(element, javalang.tree.Literal) and isinstance(element.value, str):
+                                        flag_value = element.value[1:-1] if element.value.startswith('"') else element.value
+                                        flags.append(flag_value)
                             
         return list(set(flags))
         
@@ -309,13 +372,23 @@ def extract_flags_ast_python(content: str) -> List[str]:
         flags = []
         
         for node in ast.walk(tree):
-            # Variable assignments: FLAG_NAME = "my-flag"
+            # Variable assignments: FLAG_NAME = "my-flag" or FLAG_LIST = ["flag1", "flag2"]
             if isinstance(node, ast.Assign):
-                if (len(node.targets) == 1 and
-                    isinstance(node.targets[0], ast.Name) and
-                    isinstance(node.value, ast.Constant) and
-                    isinstance(node.value.value, str)):
-                    variables[node.targets[0].id] = node.value.value
+                if (len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)):
+                    var_name = node.targets[0].id
+                    
+                    # Handle string literal assignments
+                    if (isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)):
+                        variables[var_name] = node.value.value
+                    
+                    # Handle list literal assignments: FLAG_LIST = ["flag1", "flag2"]
+                    elif isinstance(node.value, ast.List):
+                        array_values = []
+                        for element in node.value.elts:
+                            if isinstance(element, ast.Constant) and isinstance(element.value, str):
+                                array_values.append(element.value)
+                        if array_values:  # Only store if we found string values
+                            variables[var_name] = array_values
                     
             # Method calls: client.getTreatment(FLAG_NAME) - extract all string arguments
             elif isinstance(node, ast.Call):
@@ -326,13 +399,24 @@ def extract_flags_ast_python(content: str) -> List[str]:
                 elif isinstance(node.func, ast.Name):
                     method_name = node.func.id
                     
-                if method_name in ['getTreatment', 'get_treatment', 'treatment', 'get_treatment_with_config']:
+                if method_name in ['getTreatment', 'get_treatment', 'treatment', 'get_treatment_with_config', 'getTreatments', 'get_treatments', 'get_treatments_with_config']:
                     # Extract all string arguments - safer approach for different SDK signatures
                     for arg in node.args:
                         if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                             flags.append(arg.value)
                         elif isinstance(arg, ast.Name) and arg.id in variables:
-                            flags.append(variables[arg.id])
+                            var_value = variables[arg.id]
+                            if isinstance(var_value, str):
+                                flags.append(var_value)
+                            elif isinstance(var_value, list):
+                                flags.extend(var_value)  # Add all flags from list variable
+                        elif isinstance(arg, ast.List):
+                            # Handle list literals: ['flag1', 'flag2', 'flag3']
+                            for element in arg.elts:
+                                if isinstance(element, ast.Constant) and isinstance(element.value, str):
+                                    flags.append(element.value)
+                                elif isinstance(element, ast.Name) and element.id in variables:
+                                    flags.append(variables[element.id])
                             
         return list(set(flags))
         
@@ -407,7 +491,7 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                     elif child.type == 'identifier':
                         method_name = content[child.start_byte:child.end_byte]
                 
-                # Check if this is a feature flag method
+                # Check if this is a feature flag method (including plural forms and async variants)
                 if method_name and ('GetTreatment' in method_name or 'Treatment' in method_name):
                     # Extract arguments
                     for child in node.children:
@@ -420,10 +504,18 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                                             flag_value = content[arg_value.start_byte+1:arg_value.end_byte-1]
                                             flags.append(flag_value)
                                         elif arg_value.type == 'identifier':
-                                            # Variable reference
+                                            # Variable reference for single flags
                                             var_name = content[arg_value.start_byte:arg_value.end_byte]
                                             if var_name in variables:
                                                 flags.append(variables[var_name])
+                                        elif arg_value.type == 'object_creation_expression':
+                                            # Handle: new List<string> { "flag1", "flag2" }
+                                            for creation_child in arg_value.children:
+                                                if creation_child.type == 'initializer_expression':
+                                                    for init_child in creation_child.children:
+                                                        if init_child.type == 'string_literal':
+                                                            flag_value = content[init_child.start_byte+1:init_child.end_byte-1]
+                                                            flags.append(flag_value)
             
             # Recursively walk children
             for child in node.children:
@@ -449,32 +541,90 @@ def _extract_flags_csharp_regex_fallback(content: str) -> List[str]:
     for var_name, var_value in var_matches:
         variables[var_name] = var_value
     
-    # GetTreatment calls with string literals - extract all string arguments
-    direct_pattern = r'GetTreatment(?:WithConfig)?(?:Async)?\s*\([^)]*?["\']([^"\']+?)["\']'
+    # GetTreatment calls with string literals - extract all string arguments (including plural forms)
+    # More precise pattern to avoid false positives
+    direct_pattern = r'(?:^|[^a-zA-Z])GetTreatments?(?:WithConfig)?(?:Async)?\s*\([^)]*?["\']([^"\']+?)["\']'
     direct_matches = re.findall(direct_pattern, content)
     flags.extend(direct_matches)
     
     # GetTreatment calls with variables - extract all variable arguments
-    var_usage_pattern = r'GetTreatment(?:WithConfig|WithConfigAsync)?\([^)]*\b([a-zA-Z_][a-zA-Z0-9_]*)\b[^)]*\)'
+    var_usage_pattern = r'GetTreatments?(?:WithConfig)?(?:Async)?\([^)]*\b([a-zA-Z_][a-zA-Z0-9_]*)\b[^)]*\)'
     var_usage_matches = re.findall(var_usage_pattern, content)
     for var_name in var_usage_matches:
         if var_name in variables:
             flags.append(variables[var_name])
+            
+    # Handle List<string> initialization patterns: new List<string> { "flag1", "flag2" }
+    # Extract from both variable declarations and method calls
+    list_patterns = [
+        # In GetTreatment method calls
+        r'GetTreatments?(?:WithConfig)?(?:Async)?\s*\([^)]*new\s+List<string>\s*\{([^}]+)\}',
+        # In variable declarations: List<string> flagList = new List<string> { "flag1", "flag2" };
+        r'List<string>\s+\w+\s*=\s*new\s+List<string>\s*\{([^}]+)\}',
+        # Static readonly declarations: readonly List<string> FlagList = new List<string> { "flag1", "flag2" };
+        r'readonly\s+List<string>\s+\w+\s*=\s*new\s+List<string>\s*\{([^}]+)\}',
+        # Var declarations: var flagList = new List<string> { "flag1", "flag2" };
+        r'var\s+\w+\s*=\s*new\s+List<string>\s*\{([^}]+)\}',
+    ]
+    
+    for list_pattern in list_patterns:
+        list_matches = re.findall(list_pattern, content)
+        for list_content in list_matches:
+            # Extract individual string literals from the list
+            string_pattern = r'["\']([^"\']+)["\']'
+            string_matches = re.findall(string_pattern, list_content)
+            flags.extend(string_matches)
+        
+    # Handle Java Arrays.asList patterns: Arrays.asList("flag1", "flag2")
+    arrays_aslist_pattern = r'Arrays\.asList\s*\(([^)]+)\)'
+    arrays_matches = re.findall(arrays_aslist_pattern, content)
+    for arrays_content in arrays_matches:
+        # Extract individual string literals from Arrays.asList
+        string_pattern = r'["\']([^"\']+)["\']'
+        string_matches = re.findall(string_pattern, arrays_content)
+        flags.extend(string_matches)
     
     return list(set(flags))
 
 def extract_flags_regex(content: str) -> List[str]:
     """Extract feature flags using regex patterns (fallback method)"""
     patterns = [
-        # Extract string literals from getTreatment method calls
-        r'(?:get_?)?[Tt]reatment(?:_?[Ww]ith_?[Cc]onfig(?:_?[Aa]sync)?)?\s*\([^)]*?["\']([^"\']+?)["\']',
-        r'GetTreatment(?:WithConfig(?:Async)?)?\s*\([^)]*?["\']([^"\']+?)["\']',
+        # Extract string literals from getTreatment method calls (including plural forms) 
+        # More precise patterns to avoid false positives
+        r'(?:^|[^a-zA-Z])(?:get_?)?[Tt]reatments?(?:_?[Ww]ith_?[Cc]onfig(?:_?[Aa]sync)?)?\s*\([^)]*?["\']([^"\']+?)["\']',
+        r'(?:^|[^a-zA-Z])GetTreatments?(?:WithConfig(?:Async)?)?\s*\([^)]*?["\']([^"\']+?)["\']',
     ]
     
     flags = []
     for pattern in patterns:
         matches = re.findall(pattern, content, re.DOTALL)
         flags.extend(matches)
+    
+    # Handle array/list patterns for multiple flags
+    array_patterns = [
+        # JavaScript/TypeScript: ['flag1', 'flag2']
+        r'\[([^\]]*?["\'][^"\']+["\'][^\]]*?)\]',
+        # Python: ['flag1', 'flag2'] 
+        r'\[([^\]]*?["\'][^"\']+["\'][^\]]*?)\]',
+        # Java: Arrays.asList("flag1", "flag2")
+        r'Arrays\.asList\s*\(([^)]*?["\'][^"\']+["\'][^)]*?)\)',
+        # Java: new String[]{"flag1", "flag2"} (fallback)
+        r'new\s+String\[\]\s*\{([^}]*?["\'][^"\']+["\'][^}]*?)\}',
+        # C#: new List<string> { "flag1", "flag2" } (only in GetTreatment calls)
+        r'GetTreatments?(?:WithConfig)?(?:Async)?\s*\([^)]*new\s+List<string>\s*\{([^}]*?["\'][^"\']+["\'][^}]*?)\}',
+        # C#: var declarations with List<string>
+        r'var\s+\w+\s*=\s*new\s+List<string>\s*\{([^}]*?["\'][^"\']+["\'][^}]*?)\}',
+        # C#: List<string> declarations
+        r'List<string>\s+\w+\s*=\s*new\s+List<string>\s*\{([^}]*?["\'][^"\']+["\'][^}]*?)\}',
+    ]
+    
+    for pattern in array_patterns:
+        array_matches = re.findall(pattern, content, re.DOTALL)
+        for array_content in array_matches:
+            # Extract individual string literals from array content
+            string_pattern = r'["\']([^"\']+)["\']'
+            string_matches = re.findall(string_pattern, array_content)
+            flags.extend(string_matches)
         
     return list(set(flags))
 

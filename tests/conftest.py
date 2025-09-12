@@ -91,6 +91,33 @@ def sample_javascript_code():
 
 
 @pytest.fixture
+def sample_javascript_multiple_flags_code():
+    """Sample JavaScript code with multiple flag methods for testing."""
+    return '''
+    const SINGLE_FLAG = "single-feature";
+    const FLAG_ARRAY = ["multi-flag-1", "multi-flag-2"];
+    const USER_ID = "user123";
+    
+    // Single flag methods
+    const result1 = client.getTreatment("js-single-flag");
+    const result2 = service.getTreatmentWithConfig(SINGLE_FLAG);
+    
+    // Multiple flag methods with arrays
+    const result3 = client.getTreatments(["js-multi-flag-1", "js-multi-flag-2"]);
+    const result4 = split.getTreatments(USER_ID, ["js-context-flag-1", "js-context-flag-2"]);
+    const result5 = api.getTreatmentsWithConfig(["js-config-flag-1", "js-config-flag-2"]);
+    const result6 = service.getTreatmentsWithConfig(USER_ID, FLAG_ARRAY, config);
+    
+    // Mixed usage
+    const result7 = client.getTreatment("mixed-single");
+    const result8 = client.getTreatments(["mixed-multi-1", "mixed-multi-2"]);
+    
+    // Non-flag calls (should be filtered out)
+    const other = someMethod(["not-a-flag"]);
+    '''
+
+
+@pytest.fixture
 def sample_java_code():
     """Sample Java code for testing."""
     return '''
@@ -107,6 +134,40 @@ def sample_java_code():
             
             // Non-flag calls
             String other = otherMethod("not-a-flag");
+        }
+    }
+    '''
+
+
+@pytest.fixture
+def sample_java_multiple_flags_code():
+    """Sample Java code with multiple flag methods for testing."""
+    return '''
+    import java.util.Arrays;
+    import java.util.List;
+    
+    public class FeatureService {
+        private static final String SINGLE_FLAG = "java-single-feature";
+        private static final List<String> FLAG_LIST = Arrays.asList("java-list-flag-1", "java-list-flag-2");
+        private String userId = "user456";
+        
+        public void checkFeatures() {
+            // Single flag methods
+            String result1 = client.getTreatment("java-single-flag");
+            String result2 = service.getTreatmentWithConfig(SINGLE_FLAG);
+            
+            // Multiple flag methods with Arrays.asList
+            Map<String, String> result3 = client.getTreatments(Arrays.asList("java-multi-flag-1", "java-multi-flag-2"));
+            Map<String, String> result4 = split.getTreatments(userId, Arrays.asList("java-context-flag-1", "java-context-flag-2"));
+            Map<String, String> result5 = api.getTreatmentsWithConfig(Arrays.asList("java-config-flag-1", "java-config-flag-2"));
+            Map<String, String> result6 = service.getTreatmentsWithConfig(userId, FLAG_LIST);
+            
+            // Mixed usage
+            String result7 = client.getTreatment("java-mixed-single");
+            Map<String, String> result8 = client.getTreatments(Arrays.asList("java-mixed-multi-1", "java-mixed-multi-2"));
+            
+            // Non-flag calls
+            List<String> other = otherMethod(Arrays.asList("not-a-flag"));
         }
     }
     '''
@@ -132,6 +193,34 @@ def sample_python_code():
 
 
 @pytest.fixture
+def sample_python_multiple_flags_code():
+    """Sample Python code with multiple flag methods for testing."""
+    return '''
+    SINGLE_FLAG = "python-single-feature"
+    FLAG_LIST = ["python-list-flag-1", "python-list-flag-2"]
+    user_id = "user789"
+    
+    def check_features():
+        # Single flag methods
+        result1 = client.get_treatment("python-single-flag")
+        result2 = service.get_treatment_with_config(SINGLE_FLAG)
+        
+        # Multiple flag methods with lists
+        result3 = client.get_treatments(["python-multi-flag-1", "python-multi-flag-2"])
+        result4 = split_client.get_treatments(user_id, ["python-context-flag-1", "python-context-flag-2"])
+        result5 = api.get_treatments_with_config(["python-config-flag-1", "python-config-flag-2"])
+        result6 = service.get_treatments_with_config(user_id, FLAG_LIST)
+        
+        # Mixed usage
+        result7 = client.get_treatment("python-mixed-single")
+        result8 = client.get_treatments(["python-mixed-multi-1", "python-mixed-multi-2"])
+        
+        # Non-flag calls
+        other = other_method(["not-a-flag"])
+    '''
+
+
+@pytest.fixture
 def sample_csharp_code():
     """Sample C# code for testing."""
     return '''
@@ -150,6 +239,45 @@ def sample_csharp_code():
             
             // Non-flag calls
             var other = OtherMethod("not-a-flag");
+        }
+    }
+    '''
+
+
+@pytest.fixture
+def sample_csharp_multiple_flags_code():
+    """Sample C# code with multiple flag methods for testing."""
+    return '''
+    using System.Collections.Generic;
+    
+    public class FeatureService 
+    {
+        private static readonly string SingleFlag = "csharp-single-feature";
+        private static readonly List<string> FlagList = new List<string> { "csharp-list-flag-1", "csharp-list-flag-2" };
+        private string userId = "user101";
+        
+        public async Task CheckFeatures() 
+        {
+            // Single flag methods
+            var result1 = client.GetTreatment("csharp-single-flag");
+            var result2 = service.GetTreatmentWithConfig(SingleFlag);
+            
+            // Multiple flag methods with List<string>
+            var result3 = client.GetTreatments("key", new List<string> { "csharp-multi-flag-1", "csharp-multi-flag-2" });
+            var result4 = split.GetTreatments(userId, new List<string> { "csharp-context-flag-1", "csharp-context-flag-2" });
+            var result5 = api.GetTreatmentsWithConfig("key", new List<string> { "csharp-config-flag-1", "csharp-config-flag-2" });
+            var result6 = service.GetTreatmentsWithConfig(userId, FlagList);
+            
+            // Async multiple flag methods
+            var result7 = await client.GetTreatmentsAsync("key", new List<string> { "csharp-async-flag-1", "csharp-async-flag-2" });
+            var result8 = await api.GetTreatmentsWithConfigAsync("key", new List<string> { "csharp-async-config-1", "csharp-async-config-2" });
+            
+            // Mixed usage
+            var result9 = client.GetTreatment("csharp-mixed-single");
+            var result10 = client.GetTreatments("key", new List<string> { "csharp-mixed-multi-1", "csharp-mixed-multi-2" });
+            
+            // Non-flag calls
+            var other = OtherMethod(new List<string> { "not-a-flag" });
         }
     }
     '''

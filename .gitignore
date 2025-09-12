@@ -2,3 +2,7 @@
 /bin
 /lib
 /include
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd

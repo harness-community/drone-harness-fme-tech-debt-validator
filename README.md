@@ -80,25 +80,40 @@ The plugin uses **AST (Abstract Syntax Tree) parsing** with **regex fallback** f
 **With AST Parsing (JS/Java/Python/C#):**
 - **All string literals in method calls**: Extracts every string argument for safety
   ```javascript
+  // Single flag evaluation
   getTreatment("my-flag")                    // ✅ "my-flag"
   getTreatment(userId, "my-flag")            // ✅ "my-flag" 
   getTreatment("my-flag", attributes)        // ✅ "my-flag"
   getTreatmentWithConfig("test-flag", config) // ✅ "test-flag"
+  
+  // Multiple flag evaluation
+  getTreatments(["flag1", "flag2", "flag3"]) // ✅ "flag1", "flag2", "flag3"
+  getTreatments(userId, ["flag-a", "flag-b"]) // ✅ "flag-a", "flag-b"
+  getTreatmentsWithConfig(["test1", "test2"], config) // ✅ "test1", "test2"
   ```
 - **Simple variable resolution**: 
   ```javascript
   const FLAG_NAME = "my-flag";
+  const FLAG_LIST = ["flag-a", "flag-b"];
   getTreatment(FLAG_NAME); // ✅ Resolves to "my-flag"
   getTreatment(userId, FLAG_NAME, attrs); // ✅ Also resolves
+  getTreatments(FLAG_LIST); // ✅ Resolves to ["flag-a", "flag-b"]
   ```
 - **Multiple SDK signatures**: Handles different Split.io SDK calling patterns
 - **Variable declarations and usage in same file**
 - **Multiple assignment patterns**: `let`, `const`, `var`, `string`, etc.
-- **Method call variants**: Object method calls like `client.getTreatment()`, `splitClient.getTreatmentWithConfig()`
+- **Method call variants**: Object method calls like `client.getTreatment()`, `splitClient.getTreatmentWithConfig()`, `client.getTreatments()`
+- **Array/List parsing**: Extracts individual flags from arrays and lists in all supported languages
+- **Language-specific syntax**: 
+  - **JavaScript**: `['flag1', 'flag2']`
+  - **Java**: `Arrays.asList("flag1", "flag2")`
+  - **Python**: `['flag1', 'flag2']`
+  - **C#**: `new List<string> {"flag1", "flag2"}`
 
 **With Regex Fallback:**
 - **All string arguments**: Extracts any string within method calls regardless of position
-- **Method variations**: `getTreatment`, `GetTreatment`, `get_treatment`, `getTreatmentWithConfig`, `get_treatment_with_config`, `GetTreatmentWithConfigAsync`
+- **Method variations**: `getTreatment`, `GetTreatment`, `get_treatment`, `getTreatmentWithConfig`, `getTreatments`, `GetTreatments`, `getTreatmentsWithConfig`, `GetTreatmentsAsync`, `GetTreatmentsWithConfigAsync`
+- **Array/List patterns**: Detects arrays and lists in multiple languages with flag extraction
 
 ### What CANNOT Be Detected ❌
 - **Dynamic flag names**: `getTreatment("prefix_" + userId + "_feature")`
@@ -106,26 +121,27 @@ The plugin uses **AST (Abstract Syntax Tree) parsing** with **regex fallback** f
 - **Cross-file imports**: Variables defined in other files
 - **Runtime-determined flags**: Flag names from databases/APIs
 - **Complex expressions**: `getTreatment(flags[Math.random()])`
-- **Conditional construction**: Flags built with if/else logic
+- **Get Treatments by Flag Sets**: `getTreatmentsByFlagSet(["flag_set_name", "flag_set_name2"])`
 - **Obfuscated code**: Minified or transformed code
 
 ### Detection Methods by File Type
 
 | File Extension | Method | Variable Resolution | Examples |
 |----------------|--------|-------------------|----------|
-| `.js`, `.jsx` | JavaScript AST | ✅ Yes | `getTreatment(userId, "flag")`, `getTreatment("flag", attrs)` |
-| `.java` | Java AST | ✅ Yes | `client.getTreatment(user, "flag")`, `getTreatment("flag")` |
-| `.py` | Python AST | ✅ Yes | `get_treatment(user_id, "flag")`, `get_treatment("flag")` |
-| `.cs` | Enhanced Regex | ✅ Yes | `GetTreatment(userId, "flag")`, `GetTreatmentAsync("flag")` |
-| Others | Regex Fallback | ❌ No | `getTreatment("literal-only")` |
+| `.js`, `.jsx` | JavaScript AST | ✅ Yes | `getTreatment("flag")`, `getTreatments(["flag1", "flag2"])` |
+| `.java` | Java AST | ✅ Yes | `getTreatment("flag")`, `getTreatments(Arrays.asList("flag1", "flag2"))` |
+| `.py` | Python AST | ✅ Yes | `get_treatment("flag")`, `get_treatments(["flag1", "flag2"])` |
+| `.cs` | Enhanced Regex | ✅ Yes | `GetTreatment("flag")`, `GetTreatments("key", flagList)` |
+| Others | Regex Fallback | ❌ No | `getTreatment("literal-only")`, `getTreatments(["flag1"])` |
 
 ### Best Practices for Maximum Detection
 1. **Use string literals anywhere in method calls**: Plugin extracts all string arguments safely
 2. **Simple variables work great**: `const FLAG = "name"; client.getTreatment(userId, FLAG)`
 3. **Keep variable assignments in same file** as usage for resolution
 4. **Any argument position works**: `getTreatment("flag")`, `getTreatment(user, "flag")`, `getTreatment("flag", attrs)`
-5. **Use standard method names**: `getTreatment`, `getTreatmentWithConfig`, `GetTreatmentWithConfigAsync`
-6. **Avoid dynamic construction** for static flags
+5. **Use standard method names**: `getTreatment`, `getTreatmentWithConfig`, `getTreatments`, `getTreatmentsWithConfig`, `GetTreatmentsAsync`
+6. **Array/List literals work**: `getTreatments(["flag1", "flag2"])`, `new List<string> {"flag1", "flag2"}`
+7. **Avoid dynamic construction** for static flags
 
 ### Smart Filtering
 The plugin extracts **all string arguments** from method calls, then cross-references them against your actual Harness flag list. This means:
@@ -136,17 +152,20 @@ The plugin extracts **all string arguments** from method calls, then cross-refer
 ### How Smart Filtering Works
 
 ```javascript
-// Code example:
+// Single flag example:
 client.getTreatment("user123", "my-feature-flag", { attr: "value" });
 
-// Step 1: Plugin extracts ALL strings
-["user123", "my-feature-flag", "value"]
+// Multiple flags example:
+client.getTreatments("user123", ["feature-a", "feature-b", "unrelated-string"]);
+
+// Step 1: Plugin extracts ALL strings from both calls
+["user123", "my-feature-flag", "value", "feature-a", "feature-b", "unrelated-string"]
 
 // Step 2: Cross-reference with Harness flags  
-// Only "my-feature-flag" exists in your Harness project
+// Only "my-feature-flag", "feature-a", "feature-b" exist in your Harness project
 
 // Step 3: Result
-["my-feature-flag"] ✅ Correctly identified!
+["my-feature-flag", "feature-a", "feature-b"] ✅ Correctly identified!
 ```
 
 This approach is **much safer** than trying to guess argument positions across different SDK versions.
