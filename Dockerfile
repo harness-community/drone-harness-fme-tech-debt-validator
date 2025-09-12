@@ -22,7 +22,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app source code to .
-COPY app/ /harness/
+COPY app/ .
 
 # Copy test files and config
 COPY tests/ tests/
