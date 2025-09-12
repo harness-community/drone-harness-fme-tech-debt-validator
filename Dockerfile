@@ -29,4 +29,4 @@ COPY tests/ tests/
 COPY pytest.ini .
 
 # Entry point to run the CI test script
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "./main.py"]
