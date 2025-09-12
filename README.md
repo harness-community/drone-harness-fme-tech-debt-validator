@@ -45,7 +45,7 @@ steps:
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `HARNESS_API_TOKEN` | Harness API token | `none` | `pat.12345...` |
+| `PLUGIN_HARNESS_API_TOKEN` | Harness API token | `none` | `pat.12345...` |
 | `HARNESS_ACCOUNT_ID` | Harness account identifier | `none` | `abc123` |
 | `HARNESS_ORG_ID` | Harness organization identifier | `none` | `myorg` |
 | `HARNESS_PROJECT_ID` | Harness project identifier | `none` | `myproject` |
@@ -55,6 +55,13 @@ steps:
 | `PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD` | Traffic threshold for inactive flags | `-1` (disabled) | `30d`, `7d` |
 | `PLUGIN_TAG_REMOVE_THESE_FLAGS` | Comma-separated tags that fail builds | `""` | `deprecated,remove` |
 | `PLUGIN_TAG_PERMANENT_FLAGS` | Comma-separated tags for permanent flags | `""` | `permanent,keep` |
+
+**Required Variables**: The following environment variables are **required** and the plugin will fail fast if they are missing:
+- `PLUGIN_HARNESS_API_TOKEN` - Valid Harness API token with Feature Flags permissions
+- `HARNESS_ACCOUNT_ID` - Your Harness account identifier  
+- `HARNESS_PROJECT_ID` - Project identifier where your feature flags are configured
+- `DRONE_COMMIT_BEFORE` - Starting commit hash (usually provided by CI)
+- `DRONE_COMMIT_AFTER` - Ending commit hash (usually provided by CI)
 
 ### Time Duration Format
 
@@ -201,7 +208,9 @@ pip install -r requirements.txt
 # Set environment variables
 export DRONE_COMMIT_BEFORE="HEAD~1"
 export DRONE_COMMIT_AFTER="HEAD"
-export HARNESS_API_TOKEN="your-token"
+export PLUGIN_HARNESS_API_TOKEN="your-token"
+export HARNESS_ACCOUNT_ID="your-account"
+export HARNESS_PROJECT_ID="your-project"
 # ... other vars
 
 # Run the plugin
@@ -235,8 +244,18 @@ The plugin performs the following governance checks:
 
 ## Exit Codes
 
-- `0`: All checks passed
+- `0`: All checks passed successfully
 - `1`: One or more checks failed (fails the CI build)
+- `1`: Configuration error or missing required environment variables
+- `1`: Failed to connect to Harness API or fetch flag data
+
+**Fail-Fast Behavior**: The plugin will exit immediately with code `1` if:
+- Required environment variables are missing or invalid
+- Cannot connect to Harness API 
+- Cannot fetch flag data from Harness
+- Cannot analyze code changes (git operations fail)
+
+This ensures that CI builds fail early with clear error messages rather than proceeding with incomplete data that could lead to false results.
 
 ## Error Handling & Reliability
 
@@ -244,8 +263,9 @@ The plugin is designed for production CI environments with robust error handling
 
 ### Network & API Resilience
 - **30-second timeouts** prevent hanging on slow networks
-- **Graceful degradation** when Harness API is unavailable  
-- **Automatic retries** for transient network issues
+- **Fail-fast behavior** when Harness API is unavailable (prevents false results)
+- **Harness Code Repository API** integration for git diff operations in CI environments
+- **GitPython fallback** for local development when Harness API is unavailable
 - **Safe API access** handles response format changes without crashing
 - **Comprehensive logging** for debugging connection issues
 
@@ -257,20 +277,34 @@ The plugin is designed for production CI environments with robust error handling
 
 ### Fallback Behavior
 - **AST parsing with regex fallback** ensures flag detection works
-- **Continues execution** even if some API calls fail
-- **Partial results** better than complete failure
+- **GitPython → subprocess fallback** for git operations when libraries unavailable
+- **API-first with graceful fallback** for code change detection
+- **Fail-fast on critical failures** to prevent misleading results
 - **Clear error messages** help diagnose configuration issues
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Connection timeouts**: Check network connectivity to Harness API
-2. **Authentication errors**: Verify API token has correct permissions
-3. **Project not found**: Confirm account/org/project IDs are correct
-4. **Git diff failures**: Ensure container has access to git history
-5. **File encoding errors**: Some files may not be readable as UTF-8
-6. **Missing production environment**: Check environment name matches exactly
+1. **Plugin exits immediately with "Configuration Error"**: 
+   - Check that all required environment variables are set correctly
+   - Verify `PLUGIN_HARNESS_API_TOKEN` instead of `HARNESS_API_TOKEN`
+   - Ensure `DRONE_COMMIT_BEFORE` and `DRONE_COMMIT_AFTER` are provided by CI
+
+2. **"Failed to fetch flags from Harness"**: 
+   - Check network connectivity to Harness API
+   - Verify API token has correct permissions for Feature Flags
+   - Confirm account/org/project IDs are correct
+
+3. **"Cannot analyze code changes"**:
+   - Ensure container has access to git history
+   - Check that commit hashes are valid
+   - Verify `DRONE_REPO_NAME` is set for Harness Code Repository API
+
+4. **Authentication errors**: Verify API token has correct permissions
+5. **Project not found**: Confirm account/org/project IDs are correct  
+6. **File encoding errors**: Some files may not be readable as UTF-8
+7. **Missing production environment**: Check environment name matches exactly
 
 ### Debug Mode
 

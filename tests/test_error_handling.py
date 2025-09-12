@@ -15,7 +15,7 @@ class TestNetworkErrorHandling:
     @patch("app.main.requests.get")
     @patch("app.main.get_client")
     def test_connection_timeout(self, mock_get_client, mock_requests):
-        """Test handling of connection timeouts."""
+        """Test handling of connection timeouts with fail-fast behavior."""
         mock_requests.side_effect = requests.exceptions.Timeout(
             "Connection timeout"
         )
@@ -25,11 +25,11 @@ class TestNetworkErrorHandling:
             CITestRunner, "get_feature_flags_in_code", return_value=True
         ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
 
-            runner = CITestRunner()
-
-            # Should handle timeout gracefully
-            assert runner.flag_data == []
-            assert runner.metaFlagData == {}
+            # Should exit immediately on API failure
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            assert exc_info.value.code == 1
 
     @patch("app.main.requests.get")
     @patch("app.main.get_client")
@@ -44,11 +44,11 @@ class TestNetworkErrorHandling:
             CITestRunner, "get_feature_flags_in_code", return_value=True
         ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
 
-            runner = CITestRunner()
-
-            # Should handle connection error gracefully
-            assert runner.flag_data == []
-            assert runner.metaFlagData == {}
+            # Should exit immediately on API failure
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            assert exc_info.value.code == 1
 
     @patch("app.main.requests.get")
     @patch("app.main.get_client")
@@ -65,10 +65,11 @@ class TestNetworkErrorHandling:
             CITestRunner, "get_feature_flags_in_code", return_value=True
         ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
 
-            runner = CITestRunner()
-
-            # Should handle HTTP error gracefully
-            assert runner.flag_data == []
+            # Should exit immediately on API failure
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            assert exc_info.value.code == 1
 
     @patch("app.main.requests.get")
     @patch("app.main.get_client")
@@ -86,10 +87,11 @@ class TestNetworkErrorHandling:
             CITestRunner, "get_feature_flags_in_code", return_value=True
         ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
 
-            runner = CITestRunner()
-
-            # Should handle invalid JSON gracefully
-            assert runner.flag_data == []
+            # Should exit immediately on API failure
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            assert exc_info.value.code == 1
 
     @patch("app.main.requests.get")
     @patch("app.main.get_client")
@@ -107,10 +109,11 @@ class TestNetworkErrorHandling:
             CITestRunner, "get_feature_flags_in_code", return_value=True
         ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
 
-            runner = CITestRunner()
-
-            # Should handle unexpected structure gracefully
-            assert runner.flag_data == []
+            # Should exit immediately on API failure
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            assert exc_info.value.code == 1
 
 
 @pytest.mark.unit
@@ -284,7 +287,7 @@ class TestEdgeCaseValues:
         with patch.dict(
             "os.environ",
             {
-                "HARNESS_API_TOKEN": "",
+                "PLUGIN_HARNESS_API_TOKEN": "",
                 "HARNESS_ACCOUNT_ID": "",
                 "PLUGIN_MAX_FLAGS_IN_PROJECT": "",
             },

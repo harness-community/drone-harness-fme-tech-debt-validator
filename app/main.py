@@ -882,13 +882,15 @@ class CITestRunner:
         # Initialize data - will be populated by separate method calls
         if not self.get_flags():
             logger.error(
-                "Failed to fetch flags from Harness - some tests may not work correctly"
+                "Failed to fetch flags from Harness - cannot proceed with testing"
             )
+            sys.exit(1)
 
         if not self.get_feature_flags_in_code():
             logger.error(
-                "Failed to analyze code for flags - some tests may not work correctly"
+                "Failed to analyze code for flags - cannot proceed with testing"
             )
+            sys.exit(1)
 
     def _validate_configuration(self) -> bool:
         """Validate required environment variables and configuration"""
@@ -964,7 +966,7 @@ class CITestRunner:
     def get_flags(self):
         try:
             # Fetch projects with timeout and error handling
-            url = f"{self.api_base_url}/ng/api/projects?accountIdentifier={self.harness_account}?orgIdentifier={self.harness_org}"
+            url = f"{self.api_base_url}/ng/api/projects/{self.harness_project}?accountIdentifier={self.harness_account}&orgIdentifier={self.harness_org}"
             headers = {"x-api-key": self.harness_token}
 
             logger.info(f"Fetching projects from Harness API: {url}")
@@ -985,27 +987,8 @@ class CITestRunner:
                 logger.error("Unexpected response structure from Harness API")
                 return False
 
-            if "content" not in projects_data.get("data", {}):
-                logger.error("No 'content' field in projects response")
-                return False
-
-            # Find the target project
-            harness_project = None
-            for project in projects_data["data"]["content"]:
-                if project.get("identifier") == self.harness_project:
-                    harness_project = project
-                    break
-
-            if not harness_project:
-                logger.error(
-                    f"Project '{self.harness_project}' not found in account '{self.harness_account}'"
-                )
-                return False
-
-            logger.info(
-                f"Found project: {harness_project.get('name', 'Unknown')}"
-            )
-
+            harness_project = projects_data["data"]["project"]
+            
             # Get workspace and flag data with error handling
             try:
                 workspace = self.client.workspaces.find(
@@ -1152,7 +1135,8 @@ class CITestRunner:
         """Get list of changed files between commits using Harness Code Repository API"""
         try:
             # Try Harness Code API first
-            repo_name = os.getenv("DRONE_REPO_NAME").split("/")[-1]  
+            drone_repo = os.getenv("DRONE_REPO_NAME")
+            repo_name = drone_repo.split("/")[-1] if drone_repo else None
             api_token = self.harness_token
             account_id = self.harness_account
             org_id = self.harness_org

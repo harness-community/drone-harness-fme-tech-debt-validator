@@ -12,7 +12,7 @@ def mock_env_vars():
     env_vars = {
         "DRONE_COMMIT_BEFORE": "abc123",
         "DRONE_COMMIT_AFTER": "def456",
-        "HARNESS_API_TOKEN": "test-token",
+        "PLUGIN_HARNESS_API_TOKEN": "test-token",
         "HARNESS_ACCOUNT_ID": "test-account",
         "HARNESS_ORG_ID": "test-org",
         "HARNESS_PROJECT_ID": "test-project",

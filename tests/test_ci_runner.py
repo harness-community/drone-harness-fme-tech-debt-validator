@@ -55,9 +55,7 @@ class TestFlagRetrieval:
         mock_response = Mock()
         mock_response.json.return_value = {
             "data": {
-                "content": [
-                    {"identifier": "test-project", "name": "Test Project"}
-                ]
+                "project": {"identifier": "test-project", "name": "Test Project"}
             }
         }
         mock_response.raise_for_status.return_value = None
@@ -96,11 +94,11 @@ class TestFlagRetrieval:
             CITestRunner, "get_feature_flags_in_code", return_value=True
         ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
 
-            runner = CITestRunner()
-
-            # Should handle error gracefully
-            assert runner.flag_data == []
-            assert runner.metaFlagData == {}
+            # Should exit immediately on API failure
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            assert exc_info.value.code == 1
 
     @patch("app.main.requests.get")
     @patch("app.main.get_client")
@@ -127,10 +125,11 @@ class TestFlagRetrieval:
             CITestRunner, "get_code_changes", return_value=[]
         ):
 
-            runner = CITestRunner()
-
-            # Should handle missing project gracefully
-            assert runner.flag_data == []
+            # Should exit immediately when project not found
+            with pytest.raises(SystemExit) as exc_info:
+                CITestRunner()
+            
+            assert exc_info.value.code == 1
 
 
 @pytest.mark.integration
@@ -169,7 +168,7 @@ class TestCodeAnalysis:
         
         with patch.dict(os.environ, {
             "DRONE_REPO_NAME": "test-repo",
-            "HARNESS_API_TOKEN": "test-token", 
+            "PLUGIN_HARNESS_API_TOKEN": "test-token", 
             "HARNESS_ACCOUNT_ID": "test-account",
             "HARNESS_ORG_ID": "test-org",
             "HARNESS_PROJECT_ID": "test-project"
@@ -314,9 +313,7 @@ class TestFullWorkflow:
         mock_response = Mock()
         mock_response.json.return_value = {
             "data": {
-                "content": [
-                    {"identifier": "test-project", "name": "Test Project"}
-                ]
+                "project": {"identifier": "test-project", "name": "Test Project"}
             }
         }
         mock_response.raise_for_status.return_value = None
