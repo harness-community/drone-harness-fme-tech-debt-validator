@@ -28,5 +28,5 @@ COPY app/ .
 COPY tests/ tests/
 COPY pytest.ini .
 
-# Command to run the CI test script
-CMD ["python", "main.py"]
+# Entry point to run the CI test script
+ENTRYPOINT ["python", "main.py"]
