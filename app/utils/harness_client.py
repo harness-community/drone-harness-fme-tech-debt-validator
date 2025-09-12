@@ -2,7 +2,7 @@
 
 import logging
 import requests
-from typing import Dict, List, Optional
+from typing import Dict
 from splitapiclient.main import get_client
 from ..formatters import ErrorMessageFormatter
 

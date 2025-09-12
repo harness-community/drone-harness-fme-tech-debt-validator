@@ -3,7 +3,6 @@
 import pytest
 import app.main
 import app.extractors.javascript
-import app.extractors.java
 from app.extractors import (
     extract_flags_ast_javascript,
     extract_flags_ast_java,

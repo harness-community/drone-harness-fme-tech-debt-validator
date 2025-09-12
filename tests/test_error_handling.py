@@ -215,7 +215,7 @@ class TestFileHandlingErrors:
                 "app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True
             ), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=[temp_file]):
 
-                runner = CITestRunner()
+                CITestRunner()
 
                 # Should handle decode error gracefully
                 # This is now handled automatically in initialization
@@ -428,7 +428,7 @@ class TestBoundaryConditions:
 
             # Mock file reading to avoid actual file I/O
             with patch("builtins.open", side_effect=FileNotFoundError):
-                runner = CITestRunner()
+                CITestRunner()
                 # This is now handled automatically in initialization
                 result = True
 
