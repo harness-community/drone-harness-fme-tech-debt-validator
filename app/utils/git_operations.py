@@ -11,20 +11,14 @@ try:
 except ImportError:
     Repo = None
 
-from ..extractors import (
-    extract_flags_ast_javascript,
-    extract_flags_ast_java,
-    extract_flags_ast_python,
-    extract_flags_ast_csharp,
-    extract_flags_regex
-)
+from ..extractors import extract_flags_ast_javascript, extract_flags_ast_java, extract_flags_ast_python, extract_flags_ast_csharp, extract_flags_regex
 
 logger = logging.getLogger(__name__)
 
 
 class GitCodeAnalyzer:
     """Handles git operations and code analysis for feature flag detection."""
-    
+
     def __init__(self, config: Dict[str, str]):
         self.commit_before = config["commit_before"]
         self.commit_after = config["commit_after"]
@@ -33,7 +27,7 @@ class GitCodeAnalyzer:
         self.harness_account = config["harness_account"]
         self.harness_org = config["harness_org"]
         self.harness_project = config["harness_project"]
-        
+
         self.flag_file_mapping = {}  # Track which files contain which flags
 
     def get_code_changes(self) -> List[str]:
@@ -45,28 +39,26 @@ class GitCodeAnalyzer:
             api_token = self.harness_token
             account_id = self.harness_account
             org_id = self.harness_org
-            project_id = self.harness_project            
+            project_id = self.harness_project
             if repo_name and api_token and account_id:
                 url = f"{self.api_base_url}/code/api/v1/repos/{repo_name}/diff/{self.commit_before}...{self.commit_after}"
-                headers = {
-                    "x-api-key": api_token
-                }
+                headers = {"x-api-key": api_token}
                 querystring = {"accountIdentifier": account_id, "orgIdentifier": org_id, "projectIdentifier": project_id}
-                
+
                 logger.info(f"Fetching changes from Harness API: {self.commit_before}...{self.commit_after}")
                 response = requests.get(url, headers=headers, params=querystring)
                 response.raise_for_status()
-                
+
                 data = response.json()
                 # Handle both array response and object with 'files' key
                 if isinstance(data, list):
-                    changed_files = [file['path'] for file in data]
+                    changed_files = [file["path"] for file in data]
                 else:
-                    changed_files = [file['path'] for file in data.get('files', [])]
-                
+                    changed_files = [file["path"] for file in data.get("files", [])]
+
                 logger.info(f"Found {len(changed_files)} changed files via Harness API")
                 return changed_files
-            
+
             # Fallback to GitPython/subprocess
             logger.warning("Harness API credentials not available, falling back to local git")
             if Repo is None:
@@ -83,19 +75,13 @@ class GitCodeAnalyzer:
                     text=True,
                     check=True,
                 )
-                changed_files = (
-                    result.stdout.strip().split("\n")
-                    if result.stdout.strip()
-                    else []
-                )
+                changed_files = result.stdout.strip().split("\n") if result.stdout.strip() else []
             else:
-                repo = Repo('.')
-                diff_output = repo.git.diff('--name-only', self.commit_before, self.commit_after)
-                changed_files = diff_output.strip().split('\n') if diff_output.strip() else []
-            
-            logger.info(
-                f"Found {len(changed_files)} changed files between {self.commit_before} and {self.commit_after}"
-            )
+                repo = Repo(".")
+                diff_output = repo.git.diff("--name-only", self.commit_before, self.commit_after)
+                changed_files = diff_output.strip().split("\n") if diff_output.strip() else []
+
+            logger.info(f"Found {len(changed_files)} changed files between {self.commit_before} and {self.commit_after}")
             return changed_files
         except Exception as e:
             logger.error(f"Failed to get code changes: {e}")
@@ -137,9 +123,7 @@ class GitCodeAnalyzer:
                     method += " (fallback to Regex)"
 
                 if file_flags:
-                    logger.info(
-                        f"Found {len(file_flags)} flags in {file_path} using {method}: {file_flags}"
-                    )
+                    logger.info(f"Found {len(file_flags)} flags in {file_path} using {method}: {file_flags}")
                     feature_flags.extend(file_flags)
 
                     # Track which files contain which flags
@@ -148,9 +132,7 @@ class GitCodeAnalyzer:
                             self.flag_file_mapping[flag] = []
                         self.flag_file_mapping[flag].append(file_path)
                 else:
-                    logger.debug(
-                        f"No flags found in {file_path} using {method}"
-                    )
+                    logger.debug(f"No flags found in {file_path} using {method}")
 
             except (FileNotFoundError, UnicodeDecodeError) as e:
                 logger.warning(f"Could not read file {file_path}: {e}")
@@ -158,7 +140,5 @@ class GitCodeAnalyzer:
 
         # Remove duplicates
         feature_flags = list(set(feature_flags))
-        logger.info(
-            f"Total unique feature flags found: {len(feature_flags)} - {feature_flags}"
-        )
+        logger.info(f"Total unique feature flags found: {len(feature_flags)} - {feature_flags}")
         return feature_flags

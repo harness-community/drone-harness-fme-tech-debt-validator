@@ -3,4 +3,4 @@
 from .flag_checks import FlagValidator
 from .threshold_checks import ThresholdValidator
 
-__all__ = ['FlagValidator', 'ThresholdValidator']
+__all__ = ["FlagValidator", "ThresholdValidator"]

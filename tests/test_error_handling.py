@@ -16,9 +16,7 @@ class TestNetworkErrorHandling:
     @patch("app.utils.harness_client.get_client")
     def test_connection_timeout(self, mock_get_client, mock_requests):
         """Test handling of connection timeouts with fail-fast behavior."""
-        mock_requests.side_effect = requests.exceptions.Timeout(
-            "Connection timeout"
-        )
+        mock_requests.side_effect = requests.exceptions.Timeout("Connection timeout")
         mock_get_client.return_value = Mock()
 
         with patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=False):
@@ -26,16 +24,14 @@ class TestNetworkErrorHandling:
             # Should exit immediately on API failure
             with pytest.raises(SystemExit) as exc_info:
                 CITestRunner()
-            
+
             assert exc_info.value.code == 1
 
     @patch("app.utils.harness_client.requests.get")
     @patch("app.utils.harness_client.get_client")
     def test_connection_error(self, mock_get_client, mock_requests):
         """Test handling of connection errors."""
-        mock_requests.side_effect = requests.exceptions.ConnectionError(
-            "Network unreachable"
-        )
+        mock_requests.side_effect = requests.exceptions.ConnectionError("Network unreachable")
         mock_get_client.return_value = Mock()
 
         with patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=False):
@@ -43,7 +39,7 @@ class TestNetworkErrorHandling:
             # Should exit immediately on API failure
             with pytest.raises(SystemExit) as exc_info:
                 CITestRunner()
-            
+
             assert exc_info.value.code == 1
 
     @patch("app.utils.harness_client.requests.get")
@@ -51,9 +47,7 @@ class TestNetworkErrorHandling:
     def test_http_error(self, mock_get_client, mock_requests):
         """Test handling of HTTP errors."""
         mock_response = Mock()
-        mock_response.raise_for_status.side_effect = (
-            requests.exceptions.HTTPError("404 Not Found")
-        )
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Not Found")
         mock_requests.return_value = mock_response
         mock_get_client.return_value = Mock()
 
@@ -62,7 +56,7 @@ class TestNetworkErrorHandling:
             # Should exit immediately on API failure
             with pytest.raises(SystemExit) as exc_info:
                 CITestRunner()
-            
+
             assert exc_info.value.code == 1
 
     @patch("app.utils.harness_client.requests.get")
@@ -70,9 +64,7 @@ class TestNetworkErrorHandling:
     def test_invalid_json_response(self, mock_get_client, mock_requests):
         """Test handling of invalid JSON responses."""
         mock_response = Mock()
-        mock_response.json.side_effect = ValueError(
-            "No JSON object could be decoded"
-        )
+        mock_response.json.side_effect = ValueError("No JSON object could be decoded")
         mock_response.raise_for_status.return_value = None
         mock_requests.return_value = mock_response
         mock_get_client.return_value = Mock()
@@ -82,14 +74,12 @@ class TestNetworkErrorHandling:
             # Should exit immediately on API failure
             with pytest.raises(SystemExit) as exc_info:
                 CITestRunner()
-            
+
             assert exc_info.value.code == 1
 
     @patch("app.utils.harness_client.requests.get")
     @patch("app.utils.harness_client.get_client")
-    def test_unexpected_response_structure(
-        self, mock_get_client, mock_requests
-    ):
+    def test_unexpected_response_structure(self, mock_get_client, mock_requests):
         """Test handling of unexpected response structure."""
         mock_response = Mock()
         mock_response.json.return_value = {"unexpected": "structure"}
@@ -102,7 +92,7 @@ class TestNetworkErrorHandling:
             # Should exit immediately on API failure
             with pytest.raises(SystemExit) as exc_info:
                 CITestRunner()
-            
+
             assert exc_info.value.code == 1
 
 
@@ -112,7 +102,9 @@ class TestSafeDataAccess:
 
     def test_missing_flag_attributes(self):
         """Test handling of missing flag attributes."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -130,7 +122,9 @@ class TestSafeDataAccess:
 
     def test_none_default_rule(self):
         """Test handling of None default rule."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -149,11 +143,13 @@ class TestSafeDataAccess:
 
     def test_missing_tag_attributes(self):
         """Test handling of missing tag attributes."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
-            
+
             # Create flag meta with tags but missing name attribute
             tag_mock = Mock()
             del tag_mock.name  # Remove name attribute
@@ -168,7 +164,9 @@ class TestSafeDataAccess:
 
     def test_threshold_check_with_missing_attributes(self):
         """Test threshold checking with missing timestamp attributes."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -182,7 +180,9 @@ class TestSafeDataAccess:
             runner.harness_client.meta_flag_data = {}
 
             # Should handle gracefully
-            result = runner.threshold_validator.check_last_modified_threshold(runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data)
+            result = runner.threshold_validator.check_last_modified_threshold(
+                runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data
+            )
             assert result is True
 
 
@@ -192,7 +192,9 @@ class TestFileHandlingErrors:
 
     def test_file_not_found(self):
         """Test handling of missing files."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=["missing_file.js"]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=["missing_file.js"]
+        ):
 
             runner = CITestRunner()
 
@@ -209,7 +211,9 @@ class TestFileHandlingErrors:
             temp_file = f.name
 
         try:
-            with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=[temp_file]):
+            with patch("app.utils.harness_client.get_client"), patch(
+                "app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True
+            ), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=[temp_file]):
 
                 runner = CITestRunner()
 
@@ -228,7 +232,9 @@ class TestFileHandlingErrors:
         with patch("subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(1, "git")
 
-            with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+            with patch("app.utils.harness_client.get_client"), patch(
+                "app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True
+            ), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
 
                 runner = CITestRunner()
                 changes = runner.code_analyzer.get_code_changes()
@@ -253,13 +259,15 @@ class TestEdgeCaseValues:
         ):
             with pytest.raises(SystemExit) as exc_info:
                 CITestRunner()
-            
+
             # Should exit with code 1 due to empty required environment variables
             assert exc_info.value.code == 1
 
     def test_invalid_duration_format(self):
         """Test handling of invalid duration formats."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flag_last_modified_threshold = "invalid-duration"
@@ -267,12 +275,16 @@ class TestEdgeCaseValues:
             runner.harness_client.meta_flag_data = {}
 
             # Should handle invalid duration gracefully
-            result = runner.threshold_validator.check_last_modified_threshold(runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data)
+            result = runner.threshold_validator.check_last_modified_threshold(
+                runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data
+            )
             assert result is True
 
     def test_zero_flag_count_limit(self):
         """Test flag count limit of zero."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -284,7 +296,9 @@ class TestEdgeCaseValues:
 
     def test_very_old_timestamps(self):
         """Test handling of very old timestamps."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -298,12 +312,16 @@ class TestEdgeCaseValues:
             runner.harness_client.meta_flag_data = {}
 
             # Should detect as stale
-            result = runner.threshold_validator.check_last_modified_threshold(runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data)
+            result = runner.threshold_validator.check_last_modified_threshold(
+                runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data
+            )
             assert result is False
 
     def test_future_timestamps(self):
         """Test handling of future timestamps."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -318,7 +336,9 @@ class TestEdgeCaseValues:
             runner.harness_client.meta_flag_data = {}
 
             # Should pass (not considered stale)
-            result = runner.threshold_validator.check_last_modified_threshold(runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data)
+            result = runner.threshold_validator.check_last_modified_threshold(
+                runner.flags_in_code, runner.harness_client.meta_flag_data, runner.harness_client.flag_data
+            )
             assert result is True
 
 
@@ -329,20 +349,18 @@ class TestExceptionHandling:
     def test_client_initialization_failure(self):
         """Test handling of client initialization failure."""
         with patch("app.utils.harness_client.get_client") as mock_get_client:
-            mock_get_client.side_effect = Exception(
-                "Client initialization failed"
-            )
+            mock_get_client.side_effect = Exception("Client initialization failed")
 
             with patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
                 # Should raise the exception (not handled at this level)
-                with pytest.raises(
-                    Exception, match="Client initialization failed"
-                ):
+                with pytest.raises(Exception, match="Client initialization failed"):
                     CITestRunner()
 
     def test_tag_processing_exception(self):
         """Test handling of exceptions during tag processing."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -360,16 +378,16 @@ class TestExceptionHandling:
 
     def test_100_percent_check_exception(self):
         """Test handling of exceptions during 100% check."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
 
             # Create flag detail that raises exception
             flag_detail = Mock()
             flag_detail.name = "test-flag"
-            flag_detail._traffic_allocation = Mock(
-                side_effect=Exception("Allocation error")
-            )
+            flag_detail._traffic_allocation = Mock(side_effect=Exception("Allocation error"))
             runner.harness_client.flag_data = [flag_detail]
 
             # Should handle exception gracefully
@@ -378,7 +396,9 @@ class TestExceptionHandling:
 
     def test_test_execution_exception(self):
         """Test handling of exceptions during test execution."""
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]
+        ):
 
             runner = CITestRunner()
 
@@ -387,9 +407,7 @@ class TestExceptionHandling:
                 raise Exception("Test execution error")
 
             test_results = []
-            result = runner._run_test(
-                failing_test, "failing test", test_results
-            )
+            result = runner._run_test(failing_test, "failing test", test_results)
 
             # Should handle exception and return False
             assert result is False
@@ -404,7 +422,9 @@ class TestBoundaryConditions:
         """Test handling of large number of changed files."""
         large_file_list = [f"file_{i}.js" for i in range(1000)]
 
-        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=large_file_list):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch(
+            "app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=large_file_list
+        ):
 
             # Mock file reading to avoid actual file I/O
             with patch("builtins.open", side_effect=FileNotFoundError):

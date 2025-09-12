@@ -23,7 +23,7 @@ def mock_env_vars():
         "PLUGIN_TAG_REMOVE_THESE_FLAGS": "deprecated,remove",
         "PLUGIN_TAG_PERMANENT_FLAGS": "permanent,keep",
     }
-    
+
     with patch.dict(os.environ, env_vars):
         yield env_vars
 
@@ -321,11 +321,7 @@ def mock_requests_response():
     """Mock requests response for API calls."""
     response = Mock()
     response.status_code = 200
-    response.json.return_value = {
-        "data": {
-            "content": [{"identifier": "test-project", "name": "Test Project"}]
-        }
-    }
+    response.json.return_value = {"data": {"content": [{"identifier": "test-project", "name": "Test Project"}]}}
     response.raise_for_status.return_value = None
     return response
 

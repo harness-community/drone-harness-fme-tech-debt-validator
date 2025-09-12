@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class HarnessApiClient:
     """Handles all Harness API interactions for feature flag data."""
-    
+
     def __init__(self, config: Dict[str, str]):
         self.api_base_url = config.get("api_base_url", "https://app.harness.io")
         self.harness_token = config["harness_token"]
@@ -19,13 +19,15 @@ class HarnessApiClient:
         self.harness_org = config["harness_org"]
         self.harness_project = config["harness_project"]
         self.production_environment_name = config.get("production_environment_name", "Production")
-        
-        self.client = get_client({
-            "harness_mode": True,
-            "harness_token": self.harness_token,
-            "account_identifier": self.harness_account,
-        })
-        
+
+        self.client = get_client(
+            {
+                "harness_mode": True,
+                "harness_token": self.harness_token,
+                "account_identifier": self.harness_account,
+            }
+        )
+
         self.flag_data = []
         self.meta_flag_data = {}
 
@@ -52,24 +54,17 @@ class HarnessApiClient:
                 return False
 
             # Validate response structure
-            if (
-                not isinstance(projects_data, dict)
-                or "data" not in projects_data
-            ):
+            if not isinstance(projects_data, dict) or "data" not in projects_data:
                 logger.error("Unexpected response structure from Harness API")
                 return False
 
             harness_project = projects_data["data"]["project"]
-            
+
             # Get workspace and flag data with error handling
             try:
-                workspace = self.client.workspaces.find(
-                    harness_project["name"]
-                )
+                workspace = self.client.workspaces.find(harness_project["name"])
                 if not workspace:
-                    logger.error(
-                        f"Workspace not found for project: {harness_project['name']}"
-                    )
+                    logger.error(f"Workspace not found for project: {harness_project['name']}")
                     return False
 
                 logger.info(f"Found workspace: {workspace.id}")
@@ -77,33 +72,23 @@ class HarnessApiClient:
                 metaFlagDefs = self.client.splits.list(workspace.id)
                 # Convert to dictionary for faster lookups by flag name
                 self.meta_flag_data = {flag.name: flag for flag in metaFlagDefs}
-                logger.info(
-                    f"Loaded {len(self.meta_flag_data)} flag definitions"
-                )
+                logger.info(f"Loaded {len(self.meta_flag_data)} flag definitions")
 
                 environment = self.client.environments.find(self.production_environment_name, workspace.id)
 
                 production_env_found = False
                 if environment:
-                        production_env_found = True
-                        logger.info(
-                            f"Found production environment: {environment.name}"
-                        )
+                    production_env_found = True
+                    logger.info(f"Found production environment: {environment.name}")
 
-                        flagDefs = self.client.split_definitions.list(
-                            workspace.id, environment.id
-                        )
-                        for flagDef in flagDefs:
-                            self.flag_data.append(flagDef)
+                    flagDefs = self.client.split_definitions.list(workspace.id, environment.id)
+                    for flagDef in flagDefs:
+                        self.flag_data.append(flagDef)
 
-                        logger.info(
-                            f"Loaded {len(self.flag_data)} production flag configurations"
-                        )
+                    logger.info(f"Loaded {len(self.flag_data)} production flag configurations")
 
                 if not production_env_found:
-                    logger.warning(
-                        f"Production environment '{self.production_environment_name}' not found"
-                    )
+                    logger.warning(f"Production environment '{self.production_environment_name}' not found")
 
             except Exception as e:
                 logger.error(f"Error accessing Harness Split.io client: {e}")
@@ -166,9 +151,7 @@ class HarnessApiClient:
                     "Contact Harness support if problem persists",
                 ]
 
-            error_msg = ErrorMessageFormatter.format_api_error(
-                f"HTTP {status_code} Error", str(e), error_suggestions
-            )
+            error_msg = ErrorMessageFormatter.format_api_error(f"HTTP {status_code} Error", str(e), error_suggestions)
             logger.error(error_msg)
             return False
         except requests.exceptions.RequestException as e:

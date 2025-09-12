@@ -2,4 +2,4 @@
 
 from .error_messages import ErrorMessageFormatter
 
-__all__ = ['ErrorMessageFormatter']
+__all__ = ["ErrorMessageFormatter"]

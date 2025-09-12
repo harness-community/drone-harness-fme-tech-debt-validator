@@ -7,9 +7,7 @@ class ErrorMessageFormatter:
     """Provides comprehensive, actionable error messages with troubleshooting guidance"""
 
     @staticmethod
-    def format_flag_removal_error(
-        flag_name: str, tag_name: str, files_with_flag: List[str] = None
-    ) -> str:
+    def format_flag_removal_error(flag_name: str, tag_name: str, files_with_flag: List[str] = None) -> str:
         """Format error message for flags marked for removal"""
         message = f"""
 ╔══════════════════════════════════════════════════════════════════════
@@ -46,9 +44,7 @@ class ErrorMessageFormatter:
         return message
 
     @staticmethod
-    def format_flag_count_error(
-        current_count: int, max_allowed: int, flags_in_code: List[str]
-    ) -> str:
+    def format_flag_count_error(current_count: int, max_allowed: int, flags_in_code: List[str]) -> str:
         """Format error message for flag count limit exceeded"""
         excess_count = current_count - max_allowed
         return f"""
@@ -119,16 +115,9 @@ class ErrorMessageFormatter:
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod
-    def format_api_error(
-        error_type: str, details: str, suggestions: List[str]
-    ) -> str:
+    def format_api_error(error_type: str, details: str, suggestions: List[str]) -> str:
         """Format error message for API connectivity issues"""
-        suggestion_text = "\n".join(
-            [
-                f"║    {i+1}. {suggestion}"
-                for i, suggestion in enumerate(suggestions)
-            ]
-        )
+        suggestion_text = "\n".join([f"║    {i+1}. {suggestion}" for i, suggestion in enumerate(suggestions)])
 
         return f"""
 ╔══════════════════════════════════════════════════════════════════════
@@ -155,9 +144,7 @@ class ErrorMessageFormatter:
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod
-    def format_configuration_error(
-        missing_vars: List[str], optional_vars: List[str] = None
-    ) -> str:
+    def format_configuration_error(missing_vars: List[str], optional_vars: List[str] = None) -> str:
         """Format error message for configuration issues"""
         required_text = "\n".join([f"║    • {var}" for var in missing_vars])
         optional_text = ""

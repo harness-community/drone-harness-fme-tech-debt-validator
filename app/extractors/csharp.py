@@ -31,9 +31,7 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
 
         # Build and load C# language
         try:
-            csharp_language = Language.build_library(
-                "build/csharp.so", [csharp_grammar_path]
-            )
+            csharp_language = Language.build_library("build/csharp.so", [csharp_grammar_path])
             csharp = Language(csharp_language, "c_sharp")
         except Exception:
             # If building fails, fallback to regex
@@ -56,20 +54,12 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                         var_value = None
                         for declarator_child in child.children:
                             if declarator_child.type == "identifier":
-                                var_name = content[
-                                    declarator_child.start_byte : declarator_child.end_byte
-                                ]
-                            elif (
-                                declarator_child.type == "equals_value_clause"
-                            ):
+                                var_name = content[declarator_child.start_byte : declarator_child.end_byte]
+                            elif declarator_child.type == "equals_value_clause":
                                 for value_child in declarator_child.children:
                                     if value_child.type == "string_literal":
                                         # Remove quotes from string literal
-                                        var_value = content[
-                                            value_child.start_byte
-                                            + 1 : value_child.end_byte
-                                            - 1
-                                        ]
+                                        var_value = content[value_child.start_byte + 1 : value_child.end_byte - 1]
 
                         if var_name and var_value:
                             variables[var_name] = var_value
@@ -82,18 +72,12 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                     if child.type == "member_access_expression":
                         for member_child in child.children:
                             if member_child.type == "identifier":
-                                method_name = content[
-                                    member_child.start_byte : member_child.end_byte
-                                ]
+                                method_name = content[member_child.start_byte : member_child.end_byte]
                     elif child.type == "identifier":
-                        method_name = content[
-                            child.start_byte : child.end_byte
-                        ]
+                        method_name = content[child.start_byte : child.end_byte]
 
                 # Check if this is a feature flag method (including plural forms and async variants)
-                if method_name and (
-                    "GetTreatment" in method_name or "Treatment" in method_name
-                ):
+                if method_name and ("GetTreatment" in method_name or "Treatment" in method_name):
                     # Extract arguments
                     for child in node.children:
                         if child.type == "argument_list":
@@ -102,50 +86,21 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                                     for arg_value in arg_child.children:
                                         if arg_value.type == "string_literal":
                                             # Extract string literal value (remove quotes)
-                                            flag_value = content[
-                                                arg_value.start_byte
-                                                + 1 : arg_value.end_byte
-                                                - 1
-                                            ]
+                                            flag_value = content[arg_value.start_byte + 1 : arg_value.end_byte - 1]
                                             flags.append(flag_value)
                                         elif arg_value.type == "identifier":
                                             # Variable reference for single flags
-                                            var_name = content[
-                                                arg_value.start_byte : arg_value.end_byte
-                                            ]
+                                            var_name = content[arg_value.start_byte : arg_value.end_byte]
                                             if var_name in variables:
-                                                flags.append(
-                                                    variables[var_name]
-                                                )
-                                        elif (
-                                            arg_value.type
-                                            == "object_creation_expression"
-                                        ):
+                                                flags.append(variables[var_name])
+                                        elif arg_value.type == "object_creation_expression":
                                             # Handle: new List<string> { "flag1", "flag2" }
-                                            for (
-                                                creation_child
-                                            ) in arg_value.children:
-                                                if (
-                                                    creation_child.type
-                                                    == "initializer_expression"
-                                                ):
-                                                    for (
-                                                        init_child
-                                                    ) in (
-                                                        creation_child.children
-                                                    ):
-                                                        if (
-                                                            init_child.type
-                                                            == "string_literal"
-                                                        ):
-                                                            flag_value = content[
-                                                                init_child.start_byte
-                                                                + 1 : init_child.end_byte
-                                                                - 1
-                                                            ]
-                                                            flags.append(
-                                                                flag_value
-                                                            )
+                                            for creation_child in arg_value.children:
+                                                if creation_child.type == "initializer_expression":
+                                                    for init_child in creation_child.children:
+                                                        if init_child.type == "string_literal":
+                                                            flag_value = content[init_child.start_byte + 1 : init_child.end_byte - 1]
+                                                            flags.append(flag_value)
 
             # Recursively walk children
             for child in node.children:
@@ -166,9 +121,7 @@ def _extract_flags_csharp_regex_fallback(content: str) -> List[str]:
     flags = []
 
     # Simple variable assignment pattern: string varName = "value";
-    var_pattern = (
-        r'string\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*["\']([^"\']+)["\'];'
-    )
+    var_pattern = r'string\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*["\']([^"\']+)["\'];'
     var_matches = re.findall(var_pattern, content)
     for var_name, var_value in var_matches:
         variables[var_name] = var_value

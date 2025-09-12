@@ -8,9 +8,7 @@ from unittest.mock import Mock
 
 def create_temp_file_with_content(content: str, suffix: str = ".txt") -> str:
     """Create a temporary file with given content."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=suffix, delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False) as f:
         f.write(content)
         return f.name
 
@@ -28,9 +26,7 @@ def create_mock_flag_detail(name: str, **kwargs) -> Mock:
     flag_detail = Mock()
     flag_detail.name = name
     flag_detail.lastUpdateTime = kwargs.get("lastUpdateTime", 1640995200)
-    flag_detail.lastTrafficRecievedAt = kwargs.get(
-        "lastTrafficRecievedAt", 1640995200
-    )
+    flag_detail.lastTrafficRecievedAt = kwargs.get("lastTrafficRecievedAt", 1640995200)
     flag_detail._traffic_allocation = kwargs.get("traffic_allocation", 50)
     flag_detail._rules = kwargs.get("rules", [])
     flag_detail._default_rule = kwargs.get("default_rule", Mock())
@@ -46,15 +42,7 @@ def create_mock_flag_meta(name: str, tags: List[str] = None) -> Mock:
         tag_mocks = [Mock(name=tag) for tag in tags]
         flag_meta._tags = tag_mocks
         # Mock the map/any chain for tag checking
-        flag_meta._tags.map = Mock(
-            return_value=Mock(
-                any=Mock(
-                    return_value=any(
-                        tag in ["deprecated", "remove"] for tag in tags
-                    )
-                )
-            )
-        )
+        flag_meta._tags.map = Mock(return_value=Mock(any=Mock(return_value=any(tag in ["deprecated", "remove"] for tag in tags))))
     else:
         flag_meta._tags = []
 
@@ -126,16 +114,10 @@ class MockHarnessResponse:
 def assert_flags_found(actual_flags: List[str], expected_flags: List[str]):
     """Assert that expected flags are found in actual flags."""
     for flag in expected_flags:
-        assert (
-            flag in actual_flags
-        ), f"Expected flag '{flag}' not found in {actual_flags}"
+        assert flag in actual_flags, f"Expected flag '{flag}' not found in {actual_flags}"
 
 
-def assert_flags_not_found(
-    actual_flags: List[str], unexpected_flags: List[str]
-):
+def assert_flags_not_found(actual_flags: List[str], unexpected_flags: List[str]):
     """Assert that unexpected flags are not found in actual flags."""
     for flag in unexpected_flags:
-        assert (
-            flag not in actual_flags
-        ), f"Unexpected flag '{flag}' found in {actual_flags}"
+        assert flag not in actual_flags, f"Unexpected flag '{flag}' found in {actual_flags}"

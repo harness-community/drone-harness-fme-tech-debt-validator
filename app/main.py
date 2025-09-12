@@ -10,19 +10,17 @@ from .utils import HarnessApiClient, GitCodeAnalyzer
 from .validators import FlagValidator, ThresholdValidator
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 class CITestRunner:
     """Orchestrates feature flag CI testing workflow."""
-    
+
     def __init__(self):
         # Extract configuration from environment
         self.config = self._extract_config()
-        
+
         # Validate required configuration
         if not self._validate_configuration():
             sys.exit(1)
@@ -32,18 +30,16 @@ class CITestRunner:
         self.code_analyzer = GitCodeAnalyzer(self.config)
         self.flag_validator = FlagValidator(self.config)
         self.threshold_validator = ThresholdValidator(self.config)
-        
+
         # Initialize data - will be populated by separate method calls
         if not self.harness_client.fetch_flags():
-            logger.error(
-                "Failed to fetch flags from Harness - cannot proceed with testing"
-            )
+            logger.error("Failed to fetch flags from Harness - cannot proceed with testing")
             sys.exit(1)
 
         # Get code changes and analyze for flags
         self.code_changes = self.code_analyzer.get_code_changes()
         self.flags_in_code = self.code_analyzer.analyze_code_for_flags(self.code_changes)
-        
+
         if not self.flags_in_code:
             logger.info("No feature flags found in code changes")
 
@@ -57,28 +53,14 @@ class CITestRunner:
             "harness_account": os.getenv("HARNESS_ACCOUNT_ID", "none"),
             "harness_org": os.getenv("HARNESS_ORG_ID", "none"),
             "harness_project": os.getenv("HARNESS_PROJECT_ID", "none"),
-            "production_environment_name": os.getenv(
-                "PLUGIN_PRODUCTION_ENVIRONMENT_NAME", "Production"
-            ),
+            "production_environment_name": os.getenv("PLUGIN_PRODUCTION_ENVIRONMENT_NAME", "Production"),
             "permanent_flags_tag": os.getenv("PLUGIN_TAG_PERMANENT_FLAGS", ""),
-            "remove_these_flags_tag": os.getenv(
-                "PLUGIN_TAG_REMOVE_THESE_FLAGS", ""
-            ),
-            "max_flags_in_project": os.getenv(
-                "PLUGIN_MAX_FLAGS_IN_PROJECT", "-1"
-            ),
-            "flag_last_modified_threshold": os.getenv(
-                "PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD", "-1"
-            ),
-            "flag_last_traffic_threshold": os.getenv(
-                "PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD", "-1"
-            ),
-            "flag_at_100_percent_last_modified_threshold": os.getenv(
-                "PLUGIN_FLAG_AT_100_PERCENT_LAST_MODIFIED_THRESHOLD", "-1"
-            ),
-            "flag_at_100_percent_last_traffic_threshold": os.getenv(
-                "PLUGIN_FLAG_AT_100_PERCENT_LAST_TRAFFIC_THRESHOLD", "-1"
-            ),
+            "remove_these_flags_tag": os.getenv("PLUGIN_TAG_REMOVE_THESE_FLAGS", ""),
+            "max_flags_in_project": os.getenv("PLUGIN_MAX_FLAGS_IN_PROJECT", "-1"),
+            "flag_last_modified_threshold": os.getenv("PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD", "-1"),
+            "flag_last_traffic_threshold": os.getenv("PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD", "-1"),
+            "flag_at_100_percent_last_modified_threshold": os.getenv("PLUGIN_FLAG_AT_100_PERCENT_LAST_MODIFIED_THRESHOLD", "-1"),
+            "flag_at_100_percent_last_traffic_threshold": os.getenv("PLUGIN_FLAG_AT_100_PERCENT_LAST_TRAFFIC_THRESHOLD", "-1"),
         }
 
     def _validate_configuration(self) -> bool:
@@ -109,52 +91,34 @@ class CITestRunner:
 
         # List optional variables for user information
         if self.config["remove_these_flags_tag"] == "":
-            optional_vars.append(
-                "PLUGIN_TAG_REMOVE_THESE_FLAGS (for tag-based flag removal)"
-            )
+            optional_vars.append("PLUGIN_TAG_REMOVE_THESE_FLAGS (for tag-based flag removal)")
 
         if self.config["permanent_flags_tag"] == "":
-            optional_vars.append(
-                "PLUGIN_TAG_PERMANENT_FLAGS (to exclude flags from stale checks)"
-            )
+            optional_vars.append("PLUGIN_TAG_PERMANENT_FLAGS (to exclude flags from stale checks)")
 
         if self.config["max_flags_in_project"] == "-1":
-            optional_vars.append(
-                "PLUGIN_MAX_FLAGS_IN_PROJECT (for flag count limits)"
-            )
+            optional_vars.append("PLUGIN_MAX_FLAGS_IN_PROJECT (for flag count limits)")
 
         if self.config["flag_last_modified_threshold"] == "-1":
-            optional_vars.append(
-                "PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD (for stale flag detection)"
-            )
+            optional_vars.append("PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD (for stale flag detection)")
 
         if self.config["flag_last_traffic_threshold"] == "-1":
-            optional_vars.append(
-                "PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD (for unused flag detection)"
-            )
+            optional_vars.append("PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD (for unused flag detection)")
 
         if self.config["flag_at_100_percent_last_modified_threshold"] == "-1":
-            optional_vars.append(
-                "PLUGIN_FLAG_AT_100_PERCENT_LAST_MODIFIED_THRESHOLD (for 100% flag staleness)"
-            )
+            optional_vars.append("PLUGIN_FLAG_AT_100_PERCENT_LAST_MODIFIED_THRESHOLD (for 100% flag staleness)")
 
         if self.config["flag_at_100_percent_last_traffic_threshold"] == "-1":
-            optional_vars.append(
-                "PLUGIN_FLAG_AT_100_PERCENT_LAST_TRAFFIC_THRESHOLD (for 100% flag traffic)"
-            )
+            optional_vars.append("PLUGIN_FLAG_AT_100_PERCENT_LAST_TRAFFIC_THRESHOLD (for 100% flag traffic)")
 
         if missing_required:
-            error_msg = ErrorMessageFormatter.format_configuration_error(
-                missing_required, optional_vars
-            )
+            error_msg = ErrorMessageFormatter.format_configuration_error(missing_required, optional_vars)
             logger.error(error_msg)
             return False
 
         return True
 
-    def _run_test(
-        self, test_method, test_name: str, test_results: List[Dict]
-    ) -> bool:
+    def _run_test(self, test_method, test_name: str, test_results: List[Dict]) -> bool:
         """Helper method to run a single test and handle logging/results"""
         try:
             success = test_method()
@@ -175,9 +139,7 @@ class CITestRunner:
         logger.info(f"  API Base URL: {self.config['api_base_url']}")
         logger.info(f"  Feature Flags in Code: {self.flags_in_code}")
         logger.info(f"  Feature Flags in Harness: {len(self.harness_client.flag_data)} total")
-        logger.info(
-            f"  Commit Hashes: {self.config['commit_before']} -> {self.config['commit_after']}"
-        )
+        logger.info(f"  Commit Hashes: {self.config['commit_before']} -> {self.config['commit_after']}")
 
         test_results = []
         all_tests_passed = True
@@ -186,9 +148,7 @@ class CITestRunner:
         tests = [
             (
                 lambda: self.flag_validator.check_removal_tags(
-                    self.flags_in_code, 
-                    self.harness_client.meta_flag_data, 
-                    self.code_analyzer.flag_file_mapping
+                    self.flags_in_code, self.harness_client.meta_flag_data, self.code_analyzer.flag_file_mapping
                 ),
                 "feature flag removal tag check",
             ),
@@ -198,33 +158,25 @@ class CITestRunner:
             ),
             (
                 lambda: self.threshold_validator.check_last_modified_threshold(
-                    self.flags_in_code,
-                    self.harness_client.meta_flag_data,
-                    self.harness_client.flag_data
+                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "feature flag last modified threshold check",
             ),
             (
                 lambda: self.threshold_validator.check_last_traffic_threshold(
-                    self.flags_in_code,
-                    self.harness_client.meta_flag_data,
-                    self.harness_client.flag_data
+                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "feature flag last traffic threshold check",
             ),
             (
                 lambda: self.threshold_validator.check_last_modified_threshold_100_percent(
-                    self.flags_in_code,
-                    self.harness_client.meta_flag_data,
-                    self.harness_client.flag_data
+                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "feature flag last modified threshold check for 100 percent flags",
             ),
             (
                 lambda: self.threshold_validator.check_last_traffic_threshold_100_percent(
-                    self.flags_in_code,
-                    self.harness_client.meta_flag_data,
-                    self.harness_client.flag_data
+                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "feature flag last traffic threshold check for 100 percent flags",
             ),
@@ -244,9 +196,7 @@ class CITestRunner:
         total_tests = len(test_results)
 
         logger.info(f"All Tests: {passed_tests}/{total_tests} passed")
-        logger.info(
-            f"Overall Result: {'✅ PASS' if all_tests_passed else '❌ FAIL'}"
-        )
+        logger.info(f"Overall Result: {'✅ PASS' if all_tests_passed else '❌ FAIL'}")
 
         return all_tests_passed
 
