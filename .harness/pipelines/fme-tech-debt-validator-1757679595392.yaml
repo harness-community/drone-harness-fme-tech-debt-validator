@@ -26,7 +26,6 @@ pipeline:
                     command: |-
                       pip install flake8
                       flake8 . --max-line-length=150 --extend-ignore=W293,W291,E203
-                        --exclude=.venv
                   timeout: ""
                   type: Run
               - step:
