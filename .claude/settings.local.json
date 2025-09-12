@@ -1,8 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(source .venv/bin/activate)",
-      "Bash(python -c \"\nimport ast\nimport textwrap\n\n# Test the indentation issue\nfixture_code = ''''''\n    FLAG_NAME = \"\"payment-gateway\"\"\n    user_id = \"\"user789\"\"\n    \n    def check_features():\n        # Various method signatures\n        result1 = client.get_treatment(\"\"simple-python-flag\"\")\n''''''\n\nprint(''Original code:'')\nprint(repr(fixture_code))\n\ntry:\n    tree = ast.parse(fixture_code)\n    print(''AST parsing succeeded'')\nexcept IndentationError as e:\n    print(''IndentationError:'', e)\n    \n    # Try with dedent\n    dedented = textwrap.dedent(fixture_code)\n    print(''\\nDedented code:'')\n    print(repr(dedented))\n    \n    try:\n        tree = ast.parse(dedented)\n        print(''AST parsing with dedent succeeded'')\n    except Exception as e2:\n        print(''Dedent also failed:'', e2)\n\")"
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python -m pytest tests/test_ast_parsing.py::TestJavaScriptASTParsing::test_no_esprima_fallback tests/test_ast_parsing.py::TestJavaScriptASTParsing::test_esprima_available_vs_unavailable tests/test_ast_parsing.py::TestJavaASTParsing::test_no_javalang_fallback tests/test_ast_parsing.py::TestJavaASTParsing::test_javalang_available_vs_unavailable tests/test_ast_parsing.py::TestEdgeCasesAndErrorHandling::test_dependency_fallback_handling -v)",
+      "Bash(python -m pytest tests/ -v)"
     ],
     "deny": [],
     "ask": []

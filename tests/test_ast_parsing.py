@@ -1,7 +1,10 @@
 """Tests for AST parsing functionality."""
 
 import pytest
-from app.main import (
+import app.main
+import app.extractors.javascript
+import app.extractors.java
+from app.extractors import (
     extract_flags_ast_javascript,
     extract_flags_ast_java,
     extract_flags_ast_python,
@@ -125,7 +128,7 @@ class TestJavaScriptASTParsing:
         # Mock esprima as None
         import app.main
 
-        monkeypatch.setattr(app.main, "esprima", None)
+        monkeypatch.setattr(app.extractors.javascript, "esprima", None)
 
         code = 'client.getTreatment("test-flag");'
         flags = extract_flags_ast_javascript(code)
@@ -141,20 +144,20 @@ class TestJavaScriptASTParsing:
         """
 
         # Test with esprima available (if it's installed)
-        if app.main.esprima:
+        if app.extractors.javascript.esprima:
             flags_with_esprima = extract_flags_ast_javascript(code)
             assert (
                 len(flags_with_esprima) >= 1
             )  # Should find at least some flags
 
         # Test with esprima unavailable
-        original_esprima = app.main.esprima
-        app.main.esprima = None
+        original_esprima = app.extractors.javascript.esprima
+        app.extractors.javascript.esprima = None
         try:
             flags_without_esprima = extract_flags_ast_javascript(code)
             assert flags_without_esprima == []  # Should return empty
         finally:
-            app.main.esprima = original_esprima
+            app.extractors.javascript.esprima = original_esprima
 
 
 @pytest.mark.ast
@@ -254,7 +257,7 @@ class TestJavaASTParsing:
         """Test fallback when javalang is not available."""
         import app.main
 
-        monkeypatch.setattr(app.main, "javalang", None)
+        monkeypatch.setattr(app.extractors.java, "javalang", None)
 
         code = 'client.getTreatment("test-flag");'
         flags = extract_flags_ast_java(code)
@@ -274,20 +277,20 @@ class TestJavaASTParsing:
         """
 
         # Test with javalang available (if it's installed)
-        if app.main.javalang:
+        if app.extractors.java.javalang:
             flags_with_javalang = extract_flags_ast_java(code)
             assert (
                 len(flags_with_javalang) >= 1
             )  # Should find at least some flags
 
         # Test with javalang unavailable
-        original_javalang = app.main.javalang
-        app.main.javalang = None
+        original_javalang = app.extractors.java.javalang
+        app.extractors.java.javalang = None
         try:
             flags_without_javalang = extract_flags_ast_java(code)
             assert flags_without_javalang == []  # Should return empty
         finally:
-            app.main.javalang = original_javalang
+            app.extractors.java.javalang = original_javalang
 
 
 @pytest.mark.ast
@@ -931,8 +934,8 @@ client.get_treatments([FLAG_VAR, "python-literal-flag"])
         import app.main
 
         # Mock missing esprima
-        original_esprima = app.main.esprima
-        app.main.esprima = None
+        original_esprima = app.extractors.javascript.esprima
+        app.extractors.javascript.esprima = None
 
         try:
             js_code = 'client.getTreatments(["fallback-flag"]);'
@@ -941,7 +944,7 @@ client.get_treatments([FLAG_VAR, "python-literal-flag"])
                 js_flags == []
             )  # Should return empty when esprima unavailable
         finally:
-            app.main.esprima = original_esprima
+            app.extractors.javascript.esprima = original_esprima
 
     def test_comprehensive_async_csharp_variants(self):
         """Test all C# async method variants comprehensively."""

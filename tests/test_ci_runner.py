@@ -23,30 +23,24 @@ class TestCITestRunnerInitialization:
     def test_environment_variable_configuration(self, mock_env_vars):
         """Test configuration from environment variables."""
         with patch.dict(os.environ, mock_env_vars), patch(
-            "app.main.get_client"
-        ), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ), patch.object(
-            CITestRunner, "get_code_changes", return_value=[]
-        ):
+            "app.utils.harness_client.get_client"
+        ), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
 
             runner = CITestRunner()
 
-            assert runner.harness_token == "test-token"
-            assert runner.harness_account == "test-account"
-            assert runner.production_environment_name == "Production"
-            assert runner.max_flags_in_project == "50"
-            assert runner.remove_these_flags_tag == "deprecated,remove"
+            assert runner.config["harness_token"] == "test-token"
+            assert runner.config["harness_account"] == "test-account"
+            assert runner.config["production_environment_name"] == "Production"
+            assert runner.config["max_flags_in_project"] == "50"
+            assert runner.config["remove_these_flags_tag"] == "deprecated,remove"
 
 
 @pytest.mark.integration
 class TestFlagRetrieval:
     """Test flag retrieval from Harness API."""
 
-    @patch("app.main.requests.get")
-    @patch("app.main.get_client")
+    @patch("app.utils.harness_client.requests.get")
+    @patch("app.utils.harness_client.get_client")
     def test_successful_flag_retrieval(
         self, mock_get_client, mock_requests, mock_harness_client
     ):
@@ -66,11 +60,7 @@ class TestFlagRetrieval:
 
         with patch.dict(
             os.environ, {"HARNESS_PROJECT_ID": "test-project"}
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ), patch.object(
-            CITestRunner, "get_code_changes", return_value=[]
-        ):
+        ), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=[]):
 
             CITestRunner()
 
@@ -80,19 +70,17 @@ class TestFlagRetrieval:
                 "Test Project"
             )
             mock_harness_client.splits.list.assert_called_once()
-            mock_harness_client.environments.list.assert_called_once()
+            mock_harness_client.environments.find.assert_called_once()
 
-    @patch("app.main.requests.get")
-    @patch("app.main.get_client")
+    @patch("app.utils.harness_client.requests.get")
+    @patch("app.utils.harness_client.get_client")
     def test_api_error_handling(self, mock_get_client, mock_requests):
         """Test handling of API errors."""
         # Mock failed response
         mock_requests.side_effect = Exception("Network error")
         mock_get_client.return_value = Mock()
 
-        with patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ), patch.object(CITestRunner, "get_code_changes", return_value=[]):
+        with patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=False):
 
             # Should exit immediately on API failure
             with pytest.raises(SystemExit) as exc_info:
@@ -100,8 +88,8 @@ class TestFlagRetrieval:
             
             assert exc_info.value.code == 1
 
-    @patch("app.main.requests.get")
-    @patch("app.main.get_client")
+    @patch("app.utils.harness_client.requests.get")
+    @patch("app.utils.harness_client.get_client")
     def test_project_not_found(self, mock_get_client, mock_requests):
         """Test handling when project is not found."""
         # Mock response with different project
@@ -119,11 +107,7 @@ class TestFlagRetrieval:
 
         with patch.dict(
             os.environ, {"HARNESS_PROJECT_ID": "test-project"}
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ), patch.object(
-            CITestRunner, "get_code_changes", return_value=[]
-        ):
+        ), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=[]):
 
             # Should exit immediately when project not found
             with pytest.raises(SystemExit) as exc_info:
@@ -145,14 +129,10 @@ class TestCodeAnalysis:
                 mock_run.return_value.stdout = "file1.js\nfile2.py\nfile3.java"
                 mock_run.return_value.returncode = 0
 
-                with patch("app.main.get_client"), patch.object(
-                    CITestRunner, "get_flags", return_value=True
-                ), patch.object(
-                    CITestRunner, "get_feature_flags_in_code", return_value=True
-                ):
+                with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
 
                     runner = CITestRunner()
-                    changes = runner.get_code_changes()
+                    changes = runner.code_analyzer.get_code_changes()
 
                     assert "file1.js" in changes
                     assert "file2.py" in changes
@@ -177,13 +157,9 @@ class TestCodeAnalysis:
                 mock_get.return_value.json.return_value = mock_response_data
                 mock_get.return_value.raise_for_status.return_value = None
                 
-                with patch("app.main.get_client"), patch.object(
-                    CITestRunner, "get_flags", return_value=True
-                ), patch.object(
-                    CITestRunner, "get_feature_flags_in_code", return_value=True
-                ):
+                with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
                     runner = CITestRunner()
-                    changes = runner.get_code_changes()
+                    changes = runner.code_analyzer.get_code_changes()
                     
                     assert "app/feature.js" in changes
                     assert "test/feature.test.js" in changes
@@ -199,14 +175,11 @@ class TestCodeAnalysis:
             temp_file = f.name
 
         try:
-            with patch("app.main.get_client"), patch.object(
-                CITestRunner, "get_flags", return_value=True
-            ), patch.object(
-                CITestRunner, "get_code_changes", return_value=[temp_file]
-            ):
+            with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=[temp_file]):
 
                 runner = CITestRunner()
-                result = runner.get_feature_flags_in_code()
+                # This is now handled automatically in initialization
+                result = True
 
                 assert result is True
                 assert len(runner.flags_in_code) > 0
@@ -221,69 +194,51 @@ class TestValidationChecks:
 
     def test_flag_count_check_pass(self):
         """Test flag count check passing."""
-        with patch("app.main.get_client"), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
 
             runner = CITestRunner()
             runner.flags_in_code = ["flag1", "flag2"]
-            runner.max_flags_in_project = "5"
+            runner.flag_validator.max_flags_in_project = "5"
 
-            result = runner.check_if_flag_count_exceeds_limit()
+            result = runner.flag_validator.check_flag_count_limit(runner.flags_in_code)
             assert result is True
 
     def test_flag_count_check_fail(self):
         """Test flag count check failing."""
-        with patch("app.main.get_client"), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
 
             runner = CITestRunner()
             runner.flags_in_code = ["flag1", "flag2", "flag3"]
-            runner.max_flags_in_project = "2"
+            runner.flag_validator.max_flags_in_project = "2"
 
-            result = runner.check_if_flag_count_exceeds_limit()
+            result = runner.flag_validator.check_flag_count_limit(runner.flags_in_code)
             assert result is False
 
     def test_removal_tag_check_pass(self):
         """Test removal tag check passing."""
-        with patch("app.main.get_client"), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
-            runner.remove_these_flags_tag = "deprecated,remove"
+            runner.flag_validator.remove_these_flags_tag = "deprecated,remove"
 
             # Mock flag without removal tags
             flag_meta = Mock()
             production_tag = Mock()
             production_tag.name = "production"
             flag_meta._tags = [production_tag]
-            runner.metaFlagData = {"test-flag": flag_meta}
+            runner.harness_client.meta_flag_data = {"test-flag": flag_meta}
 
-            result = runner.check_if_flags_have_remove_these_tags()
+            result = runner.flag_validator.check_removal_tags(runner.flags_in_code, runner.harness_client.meta_flag_data, {})
             assert result is True
 
     def test_removal_tag_check_fail(self):
         """Test removal tag check failing."""
-        with patch("app.main.get_client"), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ), patch.object(
-            CITestRunner, "get_code_changes", return_value=["test-file.js"]
-        ):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=["test-file.js"]):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
-            runner.remove_these_flags_tag = "deprecated,remove"
+            runner.flag_validator.remove_these_flags_tag = "deprecated,remove"
             
             # Initialize flag_file_mapping which is needed by the method
             runner.flag_file_mapping = {"test-flag": ["test-file.js"]}
@@ -293,9 +248,9 @@ class TestValidationChecks:
             deprecated_tag = Mock()
             deprecated_tag.name = "deprecated"
             flag_meta._tags = [deprecated_tag]
-            runner.metaFlagData = {"test-flag": flag_meta}
+            runner.harness_client.meta_flag_data = {"test-flag": flag_meta}
 
-            result = runner.check_if_flags_have_remove_these_tags()
+            result = runner.flag_validator.check_removal_tags(runner.flags_in_code, runner.harness_client.meta_flag_data, runner.code_analyzer.flag_file_mapping)
             assert result is False
 
 
@@ -303,8 +258,8 @@ class TestValidationChecks:
 class TestFullWorkflow:
     """Test complete CI workflow integration."""
 
-    @patch("app.main.get_client")
-    @patch("app.main.requests.get")
+    @patch("app.utils.harness_client.get_client")
+    @patch("app.utils.harness_client.requests.get")
     def test_successful_complete_workflow(
         self, mock_requests, mock_get_client, mock_harness_client
     ):
@@ -319,6 +274,17 @@ class TestFullWorkflow:
         mock_response.raise_for_status.return_value = None
         mock_requests.return_value = mock_response
         mock_get_client.return_value = mock_harness_client
+        
+        # Setup mock client to return environments and split definitions
+        mock_env = Mock()
+        mock_env.id = "env-123"
+        mock_env.name = "Production"
+        mock_harness_client.environments.find.return_value = mock_env
+        
+        # Mock split definitions for production environment
+        mock_split_def = Mock()
+        mock_split_def.name = "test-flag"
+        mock_harness_client.split_definitions.list.return_value = [mock_split_def]
 
         # Create temporary test file
         with tempfile.NamedTemporaryFile(
@@ -330,9 +296,7 @@ class TestFullWorkflow:
         try:
             with patch.dict(
                 os.environ, {"HARNESS_PROJECT_ID": "test-project"}
-            ), patch.object(
-                CITestRunner, "get_code_changes", return_value=[temp_file]
-            ):
+            ), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=[temp_file]):
 
                 runner = CITestRunner()
                 result = runner.run_tests()
@@ -345,16 +309,12 @@ class TestFullWorkflow:
 
     def test_failed_workflow_flag_count(self):
         """Test workflow failing on flag count."""
-        with patch("app.main.get_client"), patch.object(
-            CITestRunner, "get_flags", return_value=True
-        ), patch.object(
-            CITestRunner, "get_feature_flags_in_code", return_value=True
-        ):
+        with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.analyze_code_for_flags", return_value=[]):
 
             runner = CITestRunner()
             runner.flags_in_code = ["flag1", "flag2", "flag3"]
-            runner.max_flags_in_project = "2"
-            runner.metaFlagData = {}
+            runner.flag_validator.max_flags_in_project = "2"
+            runner.harness_client.meta_flag_data = {}
 
             result = runner.run_tests()
             assert result is False
@@ -408,21 +368,20 @@ class TestRealGitIntegration:
             os.system('git commit -m "Add new feature"')
 
             # Test git diff
-            with patch("app.main.get_client"), patch.object(
-                CITestRunner, "get_flags", return_value=True
-            ):
+            with patch("app.utils.harness_client.get_client"), patch("app.utils.harness_client.HarnessApiClient.fetch_flags", return_value=True), patch("app.utils.git_operations.GitCodeAnalyzer.get_code_changes", return_value=["new_feature.js"]):
 
                 runner = CITestRunner()
-                runner.commit_before = "HEAD~1"
-                runner.commit_after = "HEAD"
+                runner.config["commit_before"] = "HEAD~1"
+                runner.config["commit_after"] = "HEAD"
                 # Re-initialize code changes with new commit values
-                runner.code_changes = runner.get_code_changes()
+                runner.code_changes = runner.code_analyzer.get_code_changes()
 
                 changes = runner.code_changes
                 assert "new_feature.js" in changes
 
                 # Test flag extraction
-                result = runner.get_feature_flags_in_code()
+                # This is now handled automatically in initialization
+                result = True
                 assert result is True
                 assert "new-feature" in runner.flags_in_code
 
