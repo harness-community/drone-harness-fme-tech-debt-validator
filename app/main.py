@@ -836,7 +836,7 @@ class CITestRunner:
         self.commit_before = os.getenv("DRONE_COMMIT_BEFORE", "HEAD")
         self.commit_after = os.getenv("DRONE_COMMIT_AFTER", "HEAD")
         self.api_base_url = os.getenv("API_BASE_URL", "https://app.harness.io")
-        self.harness_token = os.getenv("PLUGINHARNESS_API_TOKEN", "none")
+        self.harness_token = os.getenv("PLUGIN_HARNESS_API_TOKEN", "none")
         self.harness_account = os.getenv("HARNESS_ACCOUNT_ID", "none")
         self.harness_org = os.getenv("HARNESS_ORG_ID", "none")
         self.harness_project = os.getenv("HARNESS_PROJECT_ID", "none")
