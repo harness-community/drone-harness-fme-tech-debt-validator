@@ -35,7 +35,9 @@ class TestCITestRunnerInitialization:
         """Test configuration from environment variables."""
         with patch.dict(os.environ, mock_env_vars), patch(
             "app.main.get_client"
-        ), patch.object(CITestRunner, "get_flags", return_value=True), patch.object(
+        ), patch.object(
+            CITestRunner, "get_flags", return_value=True
+        ), patch.object(
             CITestRunner, "get_feature_flags_in_code", return_value=True
         ), patch.object(
             CITestRunner, "get_code_changes", return_value=[]
@@ -64,7 +66,9 @@ class TestFlagRetrieval:
         mock_response = Mock()
         mock_response.json.return_value = {
             "data": {
-                "content": [{"identifier": "test-project", "name": "Test Project"}]
+                "content": [
+                    {"identifier": "test-project", "name": "Test Project"}
+                ]
             }
         }
         mock_response.raise_for_status.return_value = None
@@ -81,11 +85,13 @@ class TestFlagRetrieval:
             CITestRunner, "get_code_changes", return_value=[]
         ):
 
-            runner = CITestRunner()
+            CITestRunner()
 
             # Verify API calls were made
             mock_requests.assert_called_once()
-            mock_harness_client.workspaces.find.assert_called_once_with("Test Project")
+            mock_harness_client.workspaces.find.assert_called_once_with(
+                "Test Project"
+            )
             mock_harness_client.splits.list.assert_called_once()
             mock_harness_client.environments.list.assert_called_once()
 
@@ -115,7 +121,9 @@ class TestFlagRetrieval:
         mock_response = Mock()
         mock_response.json.return_value = {
             "data": {
-                "content": [{"identifier": "other-project", "name": "Other Project"}]
+                "content": [
+                    {"identifier": "other-project", "name": "Other Project"}
+                ]
             }
         }
         mock_response.raise_for_status.return_value = None
@@ -161,14 +169,18 @@ class TestCodeAnalysis:
 
     def test_file_analysis_integration(self, sample_javascript_code):
         """Test full file analysis pipeline."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".js", delete=False
+        ) as f:
             f.write(sample_javascript_code)
             temp_file = f.name
 
         try:
             with patch("app.main.get_client"), patch.object(
                 CITestRunner, "get_flags", return_value=True
-            ), patch.object(CITestRunner, "get_code_changes", return_value=[temp_file]):
+            ), patch.object(
+                CITestRunner, "get_code_changes", return_value=[temp_file]
+            ):
 
                 runner = CITestRunner()
                 result = runner.get_feature_flags_in_code()
@@ -188,7 +200,9 @@ class TestValidationChecks:
         """Test flag count check passing."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["flag1", "flag2"]
@@ -201,7 +215,9 @@ class TestValidationChecks:
         """Test flag count check failing."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["flag1", "flag2", "flag3"]
@@ -214,7 +230,9 @@ class TestValidationChecks:
         """Test removal tag check passing."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -234,7 +252,9 @@ class TestValidationChecks:
         """Test removal tag check failing."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -265,7 +285,9 @@ class TestFullWorkflow:
         mock_response = Mock()
         mock_response.json.return_value = {
             "data": {
-                "content": [{"identifier": "test-project", "name": "Test Project"}]
+                "content": [
+                    {"identifier": "test-project", "name": "Test Project"}
+                ]
             }
         }
         mock_response.raise_for_status.return_value = None
@@ -273,14 +295,18 @@ class TestFullWorkflow:
         mock_get_client.return_value = mock_harness_client
 
         # Create temporary test file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".js", delete=False
+        ) as f:
             f.write('client.getTreatment("test-flag");')
             temp_file = f.name
 
         try:
             with patch.dict(
                 os.environ, {"HARNESS_PROJECT_ID": "test-project"}
-            ), patch.object(CITestRunner, "get_code_changes", return_value=[temp_file]):
+            ), patch.object(
+                CITestRunner, "get_code_changes", return_value=[temp_file]
+            ):
 
                 runner = CITestRunner()
                 result = runner.run_tests()
@@ -295,7 +321,9 @@ class TestFullWorkflow:
         """Test workflow failing on flag count."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["flag1", "flag2", "flag3"]

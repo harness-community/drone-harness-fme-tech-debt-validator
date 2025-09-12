@@ -319,7 +319,9 @@ def mock_requests_response():
     response = Mock()
     response.status_code = 200
     response.json.return_value = {
-        "data": {"content": [{"identifier": "test-project", "name": "Test Project"}]}
+        "data": {
+            "content": [{"identifier": "test-project", "name": "Test Project"}]
+        }
     }
     response.raise_for_status.return_value = None
     return response

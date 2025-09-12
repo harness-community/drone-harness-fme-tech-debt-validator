@@ -8,7 +8,7 @@ import logging
 import subprocess
 import ast
 import re
-from typing import Dict, Any, List
+from typing import Dict, List
 from splitapiclient.main import get_client
 from pytimeparse import parse as parse_duration
 
@@ -111,7 +111,10 @@ class ErrorMessageFormatter:
 
     @staticmethod
     def format_stale_flag_error(
-        flag_name: str, threshold: str, last_activity: str, flag_type: str = "modified"
+        flag_name: str,
+        threshold: str,
+        last_activity: str,
+        flag_type: str = "modified",
     ) -> str:
         """Format error message for stale flags"""
         return f"""
@@ -149,10 +152,15 @@ class ErrorMessageFormatter:
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod
-    def format_api_error(error_type: str, details: str, suggestions: List[str]) -> str:
+    def format_api_error(
+        error_type: str, details: str, suggestions: List[str]
+    ) -> str:
         """Format error message for API connectivity issues"""
         suggestion_text = "\n".join(
-            [f"║    {i+1}. {suggestion}" for i, suggestion in enumerate(suggestions)]
+            [
+                f"║    {i+1}. {suggestion}"
+                for i, suggestion in enumerate(suggestions)
+            ]
         )
 
         return f"""
@@ -253,16 +261,23 @@ def extract_flags_ast_javascript(content: str) -> List[str]:
                                 variables[var_name] = decl.init.value
 
                             # Handle array literal variables: const FLAG_ARRAY = ["flag1", "flag2"]
-                            elif getattr(decl.init, "type", None) == "ArrayExpression":
+                            elif (
+                                getattr(decl.init, "type", None)
+                                == "ArrayExpression"
+                            ):
                                 array_values = []
-                                for element in getattr(decl.init, "elements", []):
+                                for element in getattr(
+                                    decl.init, "elements", []
+                                ):
                                     if getattr(
                                         element, "type", None
                                     ) == "Literal" and isinstance(
                                         getattr(element, "value", None), str
                                     ):
                                         array_values.append(element.value)
-                                if array_values:  # Only store if we found string values
+                                if (
+                                    array_values
+                                ):  # Only store if we found string values
                                     variables[var_name] = array_values
 
                 # Method calls: getTreatment(FLAG_NAME) - extract all string arguments
@@ -283,7 +298,9 @@ def extract_flags_ast_javascript(content: str) -> List[str]:
                     ):
                         # Extract all string arguments - safer approach for different SDK signatures
                         for arg in getattr(node, "arguments", []):
-                            if getattr(arg, "type", None) == "Literal" and isinstance(
+                            if getattr(
+                                arg, "type", None
+                            ) == "Literal" and isinstance(
                                 getattr(arg, "value", None), str
                             ):
                                 flags.append(arg.value)
@@ -298,7 +315,9 @@ def extract_flags_ast_javascript(content: str) -> List[str]:
                                     flags.extend(
                                         var_value
                                     )  # Add all flags from array variable
-                            elif getattr(arg, "type", None) == "ArrayExpression":
+                            elif (
+                                getattr(arg, "type", None) == "ArrayExpression"
+                            ):
                                 # Handle array literals: ['flag1', 'flag2', 'flag3']
                                 for element in getattr(arg, "elements", []):
                                     if getattr(
@@ -308,8 +327,10 @@ def extract_flags_ast_javascript(content: str) -> List[str]:
                                     ):
                                         flags.append(element.value)
                                     elif (
-                                        getattr(element, "type", None) == "Identifier"
-                                        and getattr(element, "name", None) in variables
+                                        getattr(element, "type", None)
+                                        == "Identifier"
+                                        and getattr(element, "name", None)
+                                        in variables
                                     ):
                                         flags.append(variables[element.name])
 
@@ -353,7 +374,9 @@ def extract_flags_ast_java(content: str) -> List[str]:
                     # Remove quotes from string literal
                     flag_value = node.initializer.value[1:-1]
                     variables[node.name] = flag_value
-                elif isinstance(node.initializer, javalang.tree.MethodInvocation):
+                elif isinstance(
+                    node.initializer, javalang.tree.MethodInvocation
+                ):
                     # Handle Arrays.asList("flag1", "flag2") in variable declarations
                     if (
                         hasattr(node.initializer, "member")
@@ -387,9 +410,9 @@ def extract_flags_ast_java(content: str) -> List[str]:
                 ]:
                     # Extract all string arguments - safer approach for different SDK signatures
                     for arg in node.arguments:
-                        if isinstance(arg, javalang.tree.Literal) and isinstance(
-                            arg.value, str
-                        ):
+                        if isinstance(
+                            arg, javalang.tree.Literal
+                        ) and isinstance(arg.value, str):
                             # Remove quotes from string literal
                             flag_value = (
                                 arg.value[1:-1]
@@ -410,7 +433,10 @@ def extract_flags_ast_java(content: str) -> List[str]:
                                 )  # Add all flags from array variable
                         elif isinstance(arg, javalang.tree.MethodInvocation):
                             # Handle Arrays.asList("flag1", "flag2", "flag3")
-                            if hasattr(arg, "member") and arg.member == "asList":
+                            if (
+                                hasattr(arg, "member")
+                                and arg.member == "asList"
+                            ):
                                 # Check for Arrays.asList pattern - qualifier can be a string
                                 is_arrays_aslist = False
                                 if hasattr(arg, "qualifier"):
@@ -421,7 +447,8 @@ def extract_flags_ast_java(content: str) -> List[str]:
                                         is_arrays_aslist = True
                                     elif (
                                         isinstance(
-                                            arg.qualifier, javalang.tree.MemberReference
+                                            arg.qualifier,
+                                            javalang.tree.MemberReference,
                                         )
                                         and arg.qualifier.member == "Arrays"
                                     ):
@@ -439,7 +466,9 @@ def extract_flags_ast_java(content: str) -> List[str]:
                                         ) and isinstance(list_arg.value, str):
                                             flag_value = (
                                                 list_arg.value[1:-1]
-                                                if list_arg.value.startswith('"')
+                                                if list_arg.value.startswith(
+                                                    '"'
+                                                )
                                                 else list_arg.value
                                             )
                                             flags.append(flag_value)
@@ -480,7 +509,9 @@ def extract_flags_ast_python(content: str) -> List[str]:
         for node in ast.walk(tree):
             # Variable assignments: FLAG_NAME = "my-flag" or FLAG_LIST = ["flag1", "flag2"]
             if isinstance(node, ast.Assign):
-                if len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+                if len(node.targets) == 1 and isinstance(
+                    node.targets[0], ast.Name
+                ):
                     var_name = node.targets[0].id
 
                     # Handle string literal assignments
@@ -493,11 +524,13 @@ def extract_flags_ast_python(content: str) -> List[str]:
                     elif isinstance(node.value, ast.List):
                         array_values = []
                         for element in node.value.elts:
-                            if isinstance(element, ast.Constant) and isinstance(
-                                element.value, str
-                            ):
+                            if isinstance(
+                                element, ast.Constant
+                            ) and isinstance(element.value, str):
                                 array_values.append(element.value)
-                        if array_values:  # Only store if we found string values
+                        if (
+                            array_values
+                        ):  # Only store if we found string values
                             variables[var_name] = array_values
 
             # Method calls: client.getTreatment(FLAG_NAME) - extract all string arguments
@@ -520,7 +553,9 @@ def extract_flags_ast_python(content: str) -> List[str]:
                 ]:
                     # Extract all string arguments - safer approach for different SDK signatures
                     for arg in node.args:
-                        if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                        if isinstance(arg, ast.Constant) and isinstance(
+                            arg.value, str
+                        ):
                             flags.append(arg.value)
                         elif isinstance(arg, ast.Name) and arg.id in variables:
                             var_value = variables[arg.id]
@@ -533,9 +568,9 @@ def extract_flags_ast_python(content: str) -> List[str]:
                         elif isinstance(arg, ast.List):
                             # Handle list literals: ['flag1', 'flag2', 'flag3']
                             for element in arg.elts:
-                                if isinstance(element, ast.Constant) and isinstance(
-                                    element.value, str
-                                ):
+                                if isinstance(
+                                    element, ast.Constant
+                                ) and isinstance(element.value, str):
                                     flags.append(element.value)
                                 elif (
                                     isinstance(element, ast.Name)
@@ -598,7 +633,9 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                                 var_name = content[
                                     declarator_child.start_byte : declarator_child.end_byte
                                 ]
-                            elif declarator_child.type == "equals_value_clause":
+                            elif (
+                                declarator_child.type == "equals_value_clause"
+                            ):
                                 for value_child in declarator_child.children:
                                     if value_child.type == "string_literal":
                                         # Remove quotes from string literal
@@ -623,7 +660,9 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                                     member_child.start_byte : member_child.end_byte
                                 ]
                     elif child.type == "identifier":
-                        method_name = content[child.start_byte : child.end_byte]
+                        method_name = content[
+                            child.start_byte : child.end_byte
+                        ]
 
                 # Check if this is a feature flag method (including plural forms and async variants)
                 if method_name and (
@@ -649,20 +688,26 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                                                 arg_value.start_byte : arg_value.end_byte
                                             ]
                                             if var_name in variables:
-                                                flags.append(variables[var_name])
+                                                flags.append(
+                                                    variables[var_name]
+                                                )
                                         elif (
                                             arg_value.type
                                             == "object_creation_expression"
                                         ):
                                             # Handle: new List<string> { "flag1", "flag2" }
-                                            for creation_child in arg_value.children:
+                                            for (
+                                                creation_child
+                                            ) in arg_value.children:
                                                 if (
                                                     creation_child.type
                                                     == "initializer_expression"
                                                 ):
                                                     for (
                                                         init_child
-                                                    ) in creation_child.children:
+                                                    ) in (
+                                                        creation_child.children
+                                                    ):
                                                         if (
                                                             init_child.type
                                                             == "string_literal"
@@ -672,7 +717,9 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
                                                                 + 1 : init_child.end_byte
                                                                 - 1
                                                             ]
-                                                            flags.append(flag_value)
+                                                            flags.append(
+                                                                flag_value
+                                                            )
 
             # Recursively walk children
             for child in node.children:
@@ -693,7 +740,9 @@ def _extract_flags_csharp_regex_fallback(content: str) -> List[str]:
     flags = []
 
     # Simple variable assignment pattern: string varName = "value";
-    var_pattern = r'string\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*["\']([^"\']+)["\'];'
+    var_pattern = (
+        r'string\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*["\']([^"\']+)["\'];'
+    )
     var_matches = re.findall(var_pattern, content)
     for var_name, var_value in var_matches:
         variables[var_name] = var_value
@@ -800,8 +849,12 @@ class CITestRunner:
             "PLUGIN_PRODUCTION_ENVIRONMENT_NAME", "Production"
         )
         self.permanent_flags_tag = os.getenv("PLUGIN_TAG_PERMANENT_FLAGS", "")
-        self.remove_these_flags_tag = os.getenv("PLUGIN_TAG_REMOVE_THESE_FLAGS", "")
-        self.max_flags_in_project = os.getenv("PLUGIN_MAX_FLAGS_IN_PROJECT", "-1")
+        self.remove_these_flags_tag = os.getenv(
+            "PLUGIN_TAG_REMOVE_THESE_FLAGS", ""
+        )
+        self.max_flags_in_project = os.getenv(
+            "PLUGIN_MAX_FLAGS_IN_PROJECT", "-1"
+        )
         self.flag_last_modified_threshold = os.getenv(
             "PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD", "-1"
         )
@@ -877,7 +930,9 @@ class CITestRunner:
             )
 
         if self.max_flags_in_project == "-1":
-            optional_vars.append("PLUGIN_MAX_FLAGS_IN_PROJECT (for flag count limits)")
+            optional_vars.append(
+                "PLUGIN_MAX_FLAGS_IN_PROJECT (for flag count limits)"
+            )
 
         if self.flag_last_modified_threshold == "-1":
             optional_vars.append(
@@ -925,7 +980,10 @@ class CITestRunner:
                 return False
 
             # Validate response structure
-            if not isinstance(projects_data, dict) or "data" not in projects_data:
+            if (
+                not isinstance(projects_data, dict)
+                or "data" not in projects_data
+            ):
                 logger.error("Unexpected response structure from Harness API")
                 return False
 
@@ -946,11 +1004,15 @@ class CITestRunner:
                 )
                 return False
 
-            logger.info(f"Found project: {harness_project.get('name', 'Unknown')}")
+            logger.info(
+                f"Found project: {harness_project.get('name', 'Unknown')}"
+            )
 
             # Get workspace and flag data with error handling
             try:
-                workspace = self.client.workspaces.find(harness_project["name"])
+                workspace = self.client.workspaces.find(
+                    harness_project["name"]
+                )
                 if not workspace:
                     logger.error(
                         f"Workspace not found for project: {harness_project['name']}"
@@ -962,13 +1024,18 @@ class CITestRunner:
                 metaFlagDefs = self.client.splits.list(workspace.id)
                 # Convert to dictionary for faster lookups by flag name
                 self.metaFlagData = {flag.name: flag for flag in metaFlagDefs}
-                logger.info(f"Loaded {len(self.metaFlagData)} flag definitions")
+                logger.info(
+                    f"Loaded {len(self.metaFlagData)} flag definitions"
+                )
 
                 environments = self.client.environments.list(workspace.id)
 
                 production_env_found = False
                 for environment in environments:
-                    if environment.get("name") == self.production_environment_name:
+                    if (
+                        environment.get("name")
+                        == self.production_environment_name
+                    ):
                         production_env_found = True
                         logger.info(
                             f"Found production environment: {environment.get('name')}"
@@ -1087,13 +1154,21 @@ class CITestRunner:
         """Get list of changed files between commits using git diff"""
         try:
             result = subprocess.run(
-                ["git", "diff", "--name-only", self.commit_before, self.commit_after],
+                [
+                    "git",
+                    "diff",
+                    "--name-only",
+                    self.commit_before,
+                    self.commit_after,
+                ],
                 capture_output=True,
                 text=True,
                 check=True,
             )
             changed_files = (
-                result.stdout.strip().split("\n") if result.stdout.strip() else []
+                result.stdout.strip().split("\n")
+                if result.stdout.strip()
+                else []
             )
             logger.info(
                 f"Found {len(changed_files)} changed files between {self.commit_before} and {self.commit_after}"
@@ -1150,7 +1225,9 @@ class CITestRunner:
                             self.flag_file_mapping[flag] = []
                         self.flag_file_mapping[flag].append(file_path)
                 else:
-                    logger.debug(f"No flags found in {file_path} using {method}")
+                    logger.debug(
+                        f"No flags found in {file_path} using {method}"
+                    )
 
             except (FileNotFoundError, UnicodeDecodeError) as e:
                 logger.warning(f"Could not read file {file_path}: {e}")
@@ -1180,9 +1257,13 @@ class CITestRunner:
                             # Use built-in methods if available
                             for (
                                 removal_tag
-                            ) in self.remove_these_flags_tag.lower().split(","):
+                            ) in self.remove_these_flags_tag.lower().split(
+                                ","
+                            ):
                                 if tags.map(
-                                    lambda tag: getattr(tag, "name", "").lower()
+                                    lambda tag: getattr(
+                                        tag, "name", ""
+                                    ).lower()
                                 ).any(lambda tag: tag == removal_tag.strip()):
                                     removal_tag_found = removal_tag.strip()
                                     break
@@ -1200,7 +1281,9 @@ class CITestRunner:
                                     break
 
                         if removal_tag_found:
-                            files_with_flag = self.flag_file_mapping.get(flag, [])
+                            files_with_flag = self.flag_file_mapping.get(
+                                flag, []
+                            )
                             error_msg = ErrorMessageFormatter.format_flag_removal_error(
                                 flag, removal_tag_found, files_with_flag
                             )
@@ -1215,9 +1298,9 @@ class CITestRunner:
         return True
 
     def check_if_flag_count_exceeds_limit(self) -> bool:
-        if int(self.max_flags_in_project) > -1 and len(self.flags_in_code) > int(
-            self.max_flags_in_project
-        ):
+        if int(self.max_flags_in_project) > -1 and len(
+            self.flags_in_code
+        ) > int(self.max_flags_in_project):
             error_msg = ErrorMessageFormatter.format_flag_count_error(
                 len(self.flags_in_code),
                 int(self.max_flags_in_project),
@@ -1268,13 +1351,17 @@ class CITestRunner:
                                 tag_name = getattr(tag, "name", "")
                                 if (
                                     tag_name.lower()
-                                    in self.permanent_flags_tag.lower().split(",")
+                                    in self.permanent_flags_tag.lower().split(
+                                        ","
+                                    )
                                 ):
                                     is_permanent = True
                                     break
 
                         if is_permanent:
-                            logger.info(f"Feature flag {flag} has a permanent tag")
+                            logger.info(
+                                f"Feature flag {flag} has a permanent tag"
+                            )
                             continue
                     except Exception as e:
                         logger.debug(
@@ -1300,9 +1387,9 @@ class CITestRunner:
                     # Format last activity time
                     import datetime
 
-                    last_activity = datetime.datetime.fromtimestamp(timestamp).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
+                    last_activity = datetime.datetime.fromtimestamp(
+                        timestamp
+                    ).strftime("%Y-%m-%d %H:%M:%S")
                     flag_type = (
                         "modified"
                         if attribute_name == "lastUpdateTime"
@@ -1332,8 +1419,10 @@ class CITestRunner:
                             else "receiving traffic"
                         )
 
-                        error_msg = ErrorMessageFormatter.format_stale_flag_error(
-                            flag, threshold_value, last_activity, flag_type
+                        error_msg = (
+                            ErrorMessageFormatter.format_stale_flag_error(
+                                flag, threshold_value, last_activity, flag_type
+                            )
                         )
                         logger.error(error_msg)
                         return False
@@ -1380,7 +1469,10 @@ class CITestRunner:
                                 # Safely check if any bucket has size 100
                                 if hasattr(buckets, "any"):
                                     return buckets.any(
-                                        lambda bucket: getattr(bucket, "size", 0) == 100
+                                        lambda bucket: getattr(
+                                            bucket, "size", 0
+                                        )
+                                        == 100
                                     )
                                 else:
                                     # If buckets is a list, iterate manually
@@ -1396,7 +1488,9 @@ class CITestRunner:
                     # Check if first rule has 100% allocation
                     if rules and len(rules) > 0:
                         first_rule = rules[0]
-                        rule_allocation = getattr(first_rule, "allocation", None)
+                        rule_allocation = getattr(
+                            first_rule, "allocation", None
+                        )
                         if rule_allocation == 100:
                             return True
 
@@ -1424,7 +1518,9 @@ class CITestRunner:
             check_100_percent=True,
         )
 
-    def _run_test(self, test_method, test_name: str, test_results: List[Dict]) -> bool:
+    def _run_test(
+        self, test_method, test_name: str, test_results: List[Dict]
+    ) -> bool:
         """Helper method to run a single test and handle logging/results"""
         try:
             success = test_method()
@@ -1445,7 +1541,9 @@ class CITestRunner:
         logger.info(f"  API Base URL: {self.api_base_url}")
         logger.info(f"  Feature Flags in Code: {self.flags_in_code}")
         logger.info(f"  Feature Flags in Harness: {self.flag_data}")
-        logger.info(f"  Commit Hashes: {self.commit_before} -> {self.commit_after}")
+        logger.info(
+            f"  Commit Hashes: {self.commit_before} -> {self.commit_after}"
+        )
 
         test_results = []
         all_tests_passed = True
@@ -1456,7 +1554,10 @@ class CITestRunner:
                 self.check_if_flags_have_remove_these_tags,
                 "feature flag removal tag check",
             ),
-            (self.check_if_flag_count_exceeds_limit, "feature flag count check"),
+            (
+                self.check_if_flag_count_exceeds_limit,
+                "feature flag count check",
+            ),
             (
                 self.check_flag_last_modified_threshold,
                 "feature flag last modified threshold check",
@@ -1489,7 +1590,9 @@ class CITestRunner:
         total_tests = len(test_results)
 
         logger.info(f"All Tests: {passed_tests}/{total_tests} passed")
-        logger.info(f"Overall Result: {'✅ PASS' if all_tests_passed else '❌ FAIL'}")
+        logger.info(
+            f"Overall Result: {'✅ PASS' if all_tests_passed else '❌ FAIL'}"
+        )
 
         return all_tests_passed
 

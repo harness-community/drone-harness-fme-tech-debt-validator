@@ -40,14 +40,20 @@ class TestJavaScriptASTParsing:
         }
 
         for flag in expected_flags:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
         # Should not contain strings from non-getTreatment methods
         assert "not-a-flag" not in flags
 
-    def test_multiple_flags_extraction(self, sample_javascript_multiple_flags_code):
+    def test_multiple_flags_extraction(
+        self, sample_javascript_multiple_flags_code
+    ):
         """Test extraction from getTreatments and getTreatmentsWithConfig methods."""
-        flags = extract_flags_ast_javascript(sample_javascript_multiple_flags_code)
+        flags = extract_flags_ast_javascript(
+            sample_javascript_multiple_flags_code
+        )
 
         # Expected flags from single flag methods
         single_flags = {"js-single-flag", "single-feature"}
@@ -70,7 +76,9 @@ class TestJavaScriptASTParsing:
         all_expected = single_flags | multi_flags
 
         for flag in all_expected:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
         # Should not contain strings from non-getTreatment methods
         assert "not-a-flag" not in flags
@@ -135,7 +143,9 @@ class TestJavaScriptASTParsing:
         # Test with esprima available (if it's installed)
         if app.main.esprima:
             flags_with_esprima = extract_flags_ast_javascript(code)
-            assert len(flags_with_esprima) >= 1  # Should find at least some flags
+            assert (
+                len(flags_with_esprima) >= 1
+            )  # Should find at least some flags
 
         # Test with esprima unavailable
         original_esprima = app.main.esprima
@@ -184,7 +194,9 @@ class TestJavaASTParsing:
         }
 
         for flag in expected_flags:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
     def test_multiple_flags_extraction(self, sample_java_multiple_flags_code):
         """Test extraction from getTreatments and getTreatmentsWithConfig methods with Arrays.asList."""
@@ -211,7 +223,9 @@ class TestJavaASTParsing:
         all_expected = single_flags | multi_flags
 
         for flag in all_expected:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
         # Should not contain strings from non-getTreatment methods
         assert "not-a-flag" not in flags
@@ -262,7 +276,9 @@ class TestJavaASTParsing:
         # Test with javalang available (if it's installed)
         if app.main.javalang:
             flags_with_javalang = extract_flags_ast_java(code)
-            assert len(flags_with_javalang) >= 1  # Should find at least some flags
+            assert (
+                len(flags_with_javalang) >= 1
+            )  # Should find at least some flags
 
         # Test with javalang unavailable
         original_javalang = app.main.javalang
@@ -300,9 +316,13 @@ service.get_treatment_with_config("python-config-flag")
         }
 
         for flag in expected_flags:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
-    def test_multiple_flags_extraction(self, sample_python_multiple_flags_code):
+    def test_multiple_flags_extraction(
+        self, sample_python_multiple_flags_code
+    ):
         """Test extraction from get_treatments and get_treatments_with_config methods."""
         flags = extract_flags_ast_python(sample_python_multiple_flags_code)
 
@@ -327,7 +347,9 @@ service.get_treatment_with_config("python-config-flag")
         all_expected = single_flags | multi_flags
 
         for flag in all_expected:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
         # Should not contain strings from non-getTreatment methods
         assert "not-a-flag" not in flags
@@ -397,9 +419,13 @@ class TestCSharpParsing:
         }
 
         for flag in expected_flags:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
-    def test_multiple_flags_extraction(self, sample_csharp_multiple_flags_code):
+    def test_multiple_flags_extraction(
+        self, sample_csharp_multiple_flags_code
+    ):
         """Test extraction from GetTreatments and GetTreatmentsWithConfig methods including async variants."""
         flags = extract_flags_ast_csharp(sample_csharp_multiple_flags_code)
 
@@ -428,7 +454,9 @@ class TestCSharpParsing:
         all_expected = single_flags | multi_flags
 
         for flag in all_expected:
-            assert flag in flags, f"Expected flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected flag '{flag}' not found in {flags}"
 
         # Should not contain strings from non-getTreatment methods
         assert "not-a-flag" not in flags
@@ -658,7 +686,13 @@ class TestGetTreatmentsMultipleFlags:
         service.getTreatmentsWithConfig(userId, ["config-flag-1", "config-flag-2"]);
         """
         flags = extract_flags_ast_javascript(code)
-        expected = {"flag-a", "flag-b", "flag-c", "config-flag-1", "config-flag-2"}
+        expected = {
+            "flag-a",
+            "flag-b",
+            "flag-c",
+            "config-flag-1",
+            "config-flag-2",
+        }
         assert expected.issubset(set(flags))
 
     def test_java_arrays_aslist(self):
@@ -673,7 +707,12 @@ class TestGetTreatmentsMultipleFlags:
         }
         """
         flags = extract_flags_ast_java(code)
-        expected = {"java-flag-1", "java-flag-2", "direct-flag-1", "direct-flag-2"}
+        expected = {
+            "java-flag-1",
+            "java-flag-2",
+            "direct-flag-1",
+            "direct-flag-2",
+        }
         assert expected.issubset(set(flags))
 
     def test_python_list_literals(self):
@@ -860,7 +899,10 @@ client.get_treatments([FLAG_VAR, "python-literal-flag"])
         js_flags = extract_flags_ast_javascript(js_code)
         assert "valid-flag" in js_flags
         assert "another-flag" in js_flags
-        assert len([f for f in js_flags if f in ["valid-flag", "another-flag"]]) == 2
+        assert (
+            len([f for f in js_flags if f in ["valid-flag", "another-flag"]])
+            == 2
+        )
 
     def test_very_large_arrays(self):
         """Test performance with large arrays doesn't cause issues."""
@@ -895,7 +937,9 @@ client.get_treatments([FLAG_VAR, "python-literal-flag"])
         try:
             js_code = 'client.getTreatments(["fallback-flag"]);'
             js_flags = extract_flags_ast_javascript(js_code)
-            assert js_flags == []  # Should return empty when esprima unavailable
+            assert (
+                js_flags == []
+            )  # Should return empty when esprima unavailable
         finally:
             app.main.esprima = original_esprima
 
@@ -987,7 +1031,9 @@ class TestRegexFallbackRobustness:
         }
 
         for flag in expected_flags:
-            assert flag in flags, f"Expected regex flag '{flag}' not found in {flags}"
+            assert (
+                flag in flags
+            ), f"Expected regex flag '{flag}' not found in {flags}"
 
     def test_regex_edge_cases_whitespace_and_formatting(self):
         """Test regex handles various whitespace and formatting scenarios."""

@@ -16,7 +16,9 @@ class TestNetworkErrorHandling:
     @patch("app.main.get_client")
     def test_connection_timeout(self, mock_get_client, mock_requests):
         """Test handling of connection timeouts."""
-        mock_requests.side_effect = requests.exceptions.Timeout("Connection timeout")
+        mock_requests.side_effect = requests.exceptions.Timeout(
+            "Connection timeout"
+        )
         mock_get_client.return_value = Mock()
 
         with patch.object(
@@ -53,8 +55,8 @@ class TestNetworkErrorHandling:
     def test_http_error(self, mock_get_client, mock_requests):
         """Test handling of HTTP errors."""
         mock_response = Mock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
-            "404 Not Found"
+        mock_response.raise_for_status.side_effect = (
+            requests.exceptions.HTTPError("404 Not Found")
         )
         mock_requests.return_value = mock_response
         mock_get_client.return_value = Mock()
@@ -73,7 +75,9 @@ class TestNetworkErrorHandling:
     def test_invalid_json_response(self, mock_get_client, mock_requests):
         """Test handling of invalid JSON responses."""
         mock_response = Mock()
-        mock_response.json.side_effect = ValueError("No JSON object could be decoded")
+        mock_response.json.side_effect = ValueError(
+            "No JSON object could be decoded"
+        )
         mock_response.raise_for_status.return_value = None
         mock_requests.return_value = mock_response
         mock_get_client.return_value = Mock()
@@ -89,7 +93,9 @@ class TestNetworkErrorHandling:
 
     @patch("app.main.requests.get")
     @patch("app.main.get_client")
-    def test_unexpected_response_structure(self, mock_get_client, mock_requests):
+    def test_unexpected_response_structure(
+        self, mock_get_client, mock_requests
+    ):
         """Test handling of unexpected response structure."""
         mock_response = Mock()
         mock_response.json.return_value = {"unexpected": "structure"}
@@ -115,7 +121,9 @@ class TestSafeDataAccess:
         """Test handling of missing flag attributes."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -135,7 +143,9 @@ class TestSafeDataAccess:
         """Test handling of None default rule."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -156,7 +166,9 @@ class TestSafeDataAccess:
         """Test handling of missing tag attributes."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -178,7 +190,9 @@ class TestSafeDataAccess:
         """Test threshold checking with missing timestamp attributes."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -228,7 +242,9 @@ class TestFileHandlingErrors:
         try:
             with patch("app.main.get_client"), patch.object(
                 CITestRunner, "get_flags", return_value=True
-            ), patch.object(CITestRunner, "get_code_changes", return_value=[temp_file]):
+            ), patch.object(
+                CITestRunner, "get_code_changes", return_value=[temp_file]
+            ):
 
                 runner = CITestRunner()
 
@@ -289,7 +305,9 @@ class TestEdgeCaseValues:
         """Test handling of invalid duration formats."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flag_last_modified_threshold = "invalid-duration"
@@ -304,7 +322,9 @@ class TestEdgeCaseValues:
         """Test flag count limit of zero."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -318,7 +338,9 @@ class TestEdgeCaseValues:
         """Test handling of very old timestamps."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -339,7 +361,9 @@ class TestEdgeCaseValues:
         """Test handling of future timestamps."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -365,20 +389,26 @@ class TestExceptionHandling:
     def test_client_initialization_failure(self):
         """Test handling of client initialization failure."""
         with patch("app.main.get_client") as mock_get_client:
-            mock_get_client.side_effect = Exception("Client initialization failed")
+            mock_get_client.side_effect = Exception(
+                "Client initialization failed"
+            )
 
             with patch.object(
                 CITestRunner, "get_feature_flags_in_code", return_value=True
             ):
                 # Should raise the exception (not handled at this level)
-                with pytest.raises(Exception, match="Client initialization failed"):
+                with pytest.raises(
+                    Exception, match="Client initialization failed"
+                ):
                     CITestRunner()
 
     def test_tag_processing_exception(self):
         """Test handling of exceptions during tag processing."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
             runner.flags_in_code = ["test-flag"]
@@ -398,7 +428,9 @@ class TestExceptionHandling:
         """Test handling of exceptions during 100% check."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
 
@@ -418,7 +450,9 @@ class TestExceptionHandling:
         """Test handling of exceptions during test execution."""
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_feature_flags_in_code", return_value=True):
+        ), patch.object(
+            CITestRunner, "get_feature_flags_in_code", return_value=True
+        ):
 
             runner = CITestRunner()
 
@@ -427,7 +461,9 @@ class TestExceptionHandling:
                 raise Exception("Test execution error")
 
             test_results = []
-            result = runner._run_test(failing_test, "failing test", test_results)
+            result = runner._run_test(
+                failing_test, "failing test", test_results
+            )
 
             # Should handle exception and return False
             assert result is False
@@ -444,7 +480,9 @@ class TestBoundaryConditions:
 
         with patch("app.main.get_client"), patch.object(
             CITestRunner, "get_flags", return_value=True
-        ), patch.object(CITestRunner, "get_code_changes", return_value=large_file_list):
+        ), patch.object(
+            CITestRunner, "get_code_changes", return_value=large_file_list
+        ):
 
             # Mock file reading to avoid actual file I/O
             with patch("builtins.open", side_effect=FileNotFoundError):

@@ -8,7 +8,9 @@ from unittest.mock import Mock
 
 def create_temp_file_with_content(content: str, suffix: str = ".txt") -> str:
     """Create a temporary file with given content."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=suffix, delete=False
+    ) as f:
         f.write(content)
         return f.name
 
@@ -26,7 +28,9 @@ def create_mock_flag_detail(name: str, **kwargs) -> Mock:
     flag_detail = Mock()
     flag_detail.name = name
     flag_detail.lastUpdateTime = kwargs.get("lastUpdateTime", 1640995200)
-    flag_detail.lastTrafficRecievedAt = kwargs.get("lastTrafficRecievedAt", 1640995200)
+    flag_detail.lastTrafficRecievedAt = kwargs.get(
+        "lastTrafficRecievedAt", 1640995200
+    )
     flag_detail._traffic_allocation = kwargs.get("traffic_allocation", 50)
     flag_detail._rules = kwargs.get("rules", [])
     flag_detail._default_rule = kwargs.get("default_rule", Mock())
@@ -45,7 +49,9 @@ def create_mock_flag_meta(name: str, tags: List[str] = None) -> Mock:
         flag_meta._tags.map = Mock(
             return_value=Mock(
                 any=Mock(
-                    return_value=any(tag in ["deprecated", "remove"] for tag in tags)
+                    return_value=any(
+                        tag in ["deprecated", "remove"] for tag in tags
+                    )
                 )
             )
         )
@@ -58,13 +64,16 @@ def create_mock_flag_meta(name: str, tags: List[str] = None) -> Mock:
 def create_sample_code_files() -> Dict[str, str]:
     """Create sample code files for different languages."""
     return {
-        "test.js": """
+        "test.js": (
+            """
         const FLAG_A = "feature-a";
         client.getTreatment("simple-flag");
         service.getTreatment(userId, "user-flag");
         api.getTreatmentWithConfig(FLAG_A);
-        """,
-        "test.java": """
+        """
+        ),
+        "test.java": (
+            """
         public class Test {
             private static final String FLAG_B = "feature-b";
             public void method() {
@@ -72,13 +81,17 @@ def create_sample_code_files() -> Dict[str, str]:
                 service.getTreatment(userId, FLAG_B);
             }
         }
-        """,
-        "test.py": """
+        """
+        ),
+        "test.py": (
+            """
         FLAG_C = "feature-c"
         client.get_treatment("python-flag")
         service.get_treatment(user_id, FLAG_C)
-        """,
-        "test.cs": """
+        """
+        ),
+        "test.cs": (
+            """
         public class Test {
             private string flagD = "feature-d";
             public void Method() {
@@ -86,7 +99,8 @@ def create_sample_code_files() -> Dict[str, str]:
                 service.GetTreatment(userId, flagD);
             }
         }
-        """,
+        """
+        ),
     }
 
 
@@ -117,7 +131,9 @@ def assert_flags_found(actual_flags: List[str], expected_flags: List[str]):
         ), f"Expected flag '{flag}' not found in {actual_flags}"
 
 
-def assert_flags_not_found(actual_flags: List[str], unexpected_flags: List[str]):
+def assert_flags_not_found(
+    actual_flags: List[str], unexpected_flags: List[str]
+):
     """Assert that unexpected flags are not found in actual flags."""
     for flag in unexpected_flags:
         assert (
