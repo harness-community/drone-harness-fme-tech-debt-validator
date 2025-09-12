@@ -22,11 +22,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy app source code to .
-COPY app/ .
+COPY app/ /myapp/
 
 # Copy test files and config
-COPY tests/ tests/
-COPY pytest.ini .
+COPY tests/ /mytests/
+COPY pytest.ini /mytests/
 
 # Entry point to run the CI test script
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "/myapp/main.py"]
