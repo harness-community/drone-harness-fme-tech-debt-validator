@@ -3,7 +3,7 @@
 import pytest
 import os
 import tempfile
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from app.main import CITestRunner
 
 
