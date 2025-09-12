@@ -191,7 +191,7 @@ class ErrorMessageFormatter:
 {required_text}{optional_text}
 ║ 
 ║ 📝 EXAMPLE CONFIGURATION:
-║    export HARNESS_API_TOKEN="pat.12345.abcdef..."
+║    export HARNESS_API_TOKEN="pat.12..."
 ║    export HARNESS_ACCOUNT_ID="your_account_id"
 ║    export HARNESS_PROJECT_ID="your_project_id"
 ║ 
