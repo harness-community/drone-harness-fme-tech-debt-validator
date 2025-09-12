@@ -897,7 +897,7 @@ class CITestRunner:
 
         # Check required variables for Harness API
         harness_vars = {
-            "HARNESS_API_TOKEN": self.harness_token,
+            "PLUGIN_HARNESS_API_TOKEN": self.harness_token,
             "HARNESS_ACCOUNT_ID": self.harness_account,
             "HARNESS_PROJECT_ID": self.harness_project,
         }
