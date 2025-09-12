@@ -1150,7 +1150,7 @@ class CITestRunner:
         """Get list of changed files between commits using Harness Code Repository API"""
         try:
             # Try Harness Code API first
-            repo_name = os.getenv("DRONE_REPO_NAME") #  os.getenv("HARNESS_REPO_NAME") or os.getenv("DRONE_REPO_NAME")
+            repo_name = os.getenv("DRONE_REPO_NAME")  
             api_token = self.harness_token
             account_id = self.harness_account
             org_id = self.harness_org
