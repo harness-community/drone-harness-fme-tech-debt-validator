@@ -839,6 +839,7 @@ class CITestRunner:
         self.api_base_url = os.getenv("API_BASE_URL", "https://app.harness.io")
         self.harness_token = os.getenv("HARNESS_API_TOKEN", "none")
         self.harness_account = os.getenv("HARNESS_ACCOUNT_ID", "none")
+        self.harness_org = os.getenv("HARNESS_ORG_ID", "none")
         self.harness_project = os.getenv("HARNESS_PROJECT_ID", "none")
         self.production_environment_name = os.getenv(
             "PLUGIN_PRODUCTION_ENVIRONMENT_NAME", "Production"
@@ -1152,16 +1153,18 @@ class CITestRunner:
             repo_name = os.getenv("DRONE_REPO_NAME") # os.getenv("HARNESS_REPO_NAME") or os.getenv("DRONE_REPO_NAME")
             api_token = self.harness_token
             account_id = self.harness_account
-            
+            org_id = self.harness_org
+            project_id = self.harness_project            
             if repo_name and api_token and account_id:
                 url = f"{self.api_base_url}/code/api/v1/repos/{repo_name}/diff/{self.commit_before}...{self.commit_after}"
                 headers = {
                     "x-api-key": api_token,
                     "Harness-Account": account_id
                 }
+                querystring = {"accountIdentifier":account_id,"orgIdentifier":org_id,"projectIdentifier":project_id}
                 
                 logger.info(f"Fetching changes from Harness API: {self.commit_before}...{self.commit_after}")
-                response = requests.get(url, headers=headers)
+                response = requests.get(url, headers=headers, params=querystring)
                 response.raise_for_status()
                 
                 data = response.json()
