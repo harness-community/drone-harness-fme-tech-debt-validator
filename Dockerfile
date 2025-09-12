@@ -24,5 +24,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
+RUN ls -la /app/
+RUN find /app -name "*.py"
+
 # Command to run the CI test script
 CMD ["python", "/app/main.py"]
