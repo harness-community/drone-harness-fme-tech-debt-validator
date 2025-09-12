@@ -1144,8 +1144,7 @@ class CITestRunner:
             if repo_name and api_token and account_id:
                 url = f"{self.api_base_url}/code/api/v1/repos/{repo_name}/diff/{self.commit_before}...{self.commit_after}"
                 headers = {
-                    "x-api-key": api_token,
-                    "Harness-Account": account_id
+                    "x-api-key": api_token
                 }
                 querystring = {"accountIdentifier": account_id, "orgIdentifier": org_id, "projectIdentifier": project_id}
                 
