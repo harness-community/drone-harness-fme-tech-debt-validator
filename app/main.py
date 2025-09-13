@@ -153,35 +153,35 @@ class CITestRunner:
                 lambda: self.flag_validator.check_removal_tags(
                     self.flags_in_code, self.harness_client.meta_flag_data, self.code_analyzer.flag_file_mapping
                 ),
-                "feature flag removal tag check",
+                "Feature Flag removal tag check",
             ),
             (
                 lambda: self.flag_validator.check_flag_count_limit(self.flags_in_code),
-                "feature flag count check",
+                "Feature Flag count check",
             ),
             (
                 lambda: self.threshold_validator.check_last_modified_threshold(
                     self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
-                "feature flag last modified threshold check",
+                "Feature Flag last modified threshold check",
             ),
             (
                 lambda: self.threshold_validator.check_last_traffic_threshold(
                     self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
-                "feature flag last traffic threshold check",
+                "Feature Flag last traffic threshold check",
             ),
             (
                 lambda: self.threshold_validator.check_last_modified_threshold_100_percent(
                     self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
-                "feature flag last modified threshold check for 100 percent flags",
+                "Feature Flag last modified threshold check for 100 percent flags",
             ),
             (
                 lambda: self.threshold_validator.check_last_traffic_threshold_100_percent(
                     self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
-                "feature flag last traffic threshold check for 100 percent flags",
+                "Feature Flag last traffic threshold check for 100 percent flags",
             ),
         ]
 
