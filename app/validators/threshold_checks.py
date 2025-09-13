@@ -63,14 +63,26 @@ class ThresholdValidator:
                         is_permanent = False
                         if hasattr(tags, "map") and hasattr(tags, "any"):
                             # Use built-in methods if available
-                            is_permanent = tags.map(lambda tag: getattr(tag, "name", "").lower()).any(
+                            def get_tag_name(tag):
+                                return (getattr(tag, "name", None) or
+                                       getattr(tag, "tag", None) or
+                                       getattr(tag, "label", None) or
+                                       getattr(tag, "value", None) or
+                                       str(tag) or "").lower()
+
+                            is_permanent = tags.map(get_tag_name).any(
                                 lambda tag: tag in self.permanent_flags_tag.lower().split(",")
                             )
                         else:
                             # Fallback for list-like tags
                             for tag in tags:
-                                tag_name = getattr(tag, "name", "")
-                                if tag_name.lower() in self.permanent_flags_tag.lower().split(","):
+                                # Try different possible attribute names
+                                tag_name = (getattr(tag, "name", None) or
+                                           getattr(tag, "tag", None) or
+                                           getattr(tag, "label", None) or
+                                           getattr(tag, "value", None) or
+                                           str(tag))
+                                if tag_name and tag_name.lower() in self.permanent_flags_tag.lower().split(","):
                                     is_permanent = True
                                     break
 
@@ -97,7 +109,11 @@ class ThresholdValidator:
                 # Get the timestamp attribute dynamically
                 timestamp = getattr(flag_detail, attribute_name, None)
                 if self.debug:
-                    logger.debug(f"Flag '{flag}': {attribute_name} = {timestamp}, threshold = {threshold_timestamp}")
+                    timestamp_readable = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S") if isinstance(timestamp, int) else "N/A"
+                    threshold_readable = datetime.datetime.fromtimestamp(threshold_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+                    logger.debug(f"Flag '{flag}': {attribute_name} = {timestamp} ({timestamp_readable})")
+                    logger.debug(f"Flag '{flag}': threshold = {threshold_timestamp} ({threshold_readable})")
+                    logger.debug(f"Flag '{flag}': is_stale = {isinstance(timestamp, int) and timestamp < threshold_timestamp}")
 
                 if isinstance(timestamp, int) and timestamp < threshold_timestamp and not check_100_percent:
                     # Format last activity time

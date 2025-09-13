@@ -35,14 +35,27 @@ class FlagValidator:
                     logger.debug(f"Flag '{flag}': tags found = {tags is not None}")
                     if tags:
                         tag_names = []
+                        tag_details = []
                         try:
                             if hasattr(tags, "map"):
-                                tag_names = [getattr(tag, "name", "") for tag in tags]
+                                for tag in tags:
+                                    tag_attrs = dir(tag)
+                                    tag_details.append(f"attrs: {[attr for attr in tag_attrs if not attr.startswith('_')]}")
+                                    # Try different possible attribute names
+                                    name = getattr(tag, "name", None) or getattr(tag, "tag", None) or getattr(tag, "label", None) or getattr(tag, "value", None) or str(tag)
+                                    tag_names.append(name if name else "")
                             else:
-                                tag_names = [getattr(tag, "name", "") for tag in tags]
-                        except Exception:
+                                for tag in tags:
+                                    tag_attrs = dir(tag)
+                                    tag_details.append(f"attrs: {[attr for attr in tag_attrs if not attr.startswith('_')]}")
+                                    # Try different possible attribute names
+                                    name = getattr(tag, "name", None) or getattr(tag, "tag", None) or getattr(tag, "label", None) or getattr(tag, "value", None) or str(tag)
+                                    tag_names.append(name if name else "")
+                        except Exception as e:
                             tag_names = ["<unable to read tags>"]
+                            tag_details = [f"<error: {e}>"]
                         logger.debug(f"Flag '{flag}': tag names = {tag_names}")
+                        logger.debug(f"Flag '{flag}': tag details = {tag_details}")
 
                 if tags:
                     try:
@@ -51,14 +64,26 @@ class FlagValidator:
                         if hasattr(tags, "map") and hasattr(tags, "any"):
                             # Use built-in methods if available
                             for removal_tag in self.remove_these_flags_tag.lower().split(","):
-                                if tags.map(lambda tag: getattr(tag, "name", "").lower()).any(lambda tag: tag == removal_tag.strip()):
+                                def get_tag_name(tag):
+                                    return (getattr(tag, "name", None) or
+                                           getattr(tag, "tag", None) or
+                                           getattr(tag, "label", None) or
+                                           getattr(tag, "value", None) or
+                                           str(tag) or "").lower()
+
+                                if tags.map(get_tag_name).any(lambda tag: tag == removal_tag.strip()):
                                     removal_tag_found = removal_tag.strip()
                                     break
                         else:
                             # Fallback for list-like tags
                             for tag in tags:
-                                tag_name = getattr(tag, "name", "")
-                                if tag_name.lower() in [t.strip() for t in self.remove_these_flags_tag.lower().split(",")]:
+                                # Try different possible attribute names
+                                tag_name = (getattr(tag, "name", None) or
+                                           getattr(tag, "tag", None) or
+                                           getattr(tag, "label", None) or
+                                           getattr(tag, "value", None) or
+                                           str(tag))
+                                if tag_name and tag_name.lower() in [t.strip() for t in self.remove_these_flags_tag.lower().split(",")]:
                                     removal_tag_found = tag_name
                                     break
 
