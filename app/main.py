@@ -10,7 +10,9 @@ from utils import HarnessApiClient, GitCodeAnalyzer
 from validators import FlagValidator, ThresholdValidator
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+debug_enabled = os.getenv("PLUGIN_DEBUG", "false").lower() in ("true", "1", "yes")
+log_level = logging.DEBUG if debug_enabled else logging.INFO
+logging.basicConfig(level=log_level, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -61,6 +63,7 @@ class CITestRunner:
             "flag_last_traffic_threshold": os.getenv("PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD", "-1"),
             "flag_at_100_percent_last_modified_threshold": os.getenv("PLUGIN_FLAG_AT_100_PERCENT_LAST_MODIFIED_THRESHOLD", "-1"),
             "flag_at_100_percent_last_traffic_threshold": os.getenv("PLUGIN_FLAG_AT_100_PERCENT_LAST_TRAFFIC_THRESHOLD", "-1"),
+            "debug": os.getenv("PLUGIN_DEBUG", "false").lower() in ("true", "1", "yes"),
         }
 
     def _validate_configuration(self) -> bool:
@@ -188,7 +191,7 @@ class CITestRunner:
                 all_tests_passed = False
 
         # Print summary
-        logger.info("\n" + "=" * 50)
+        logger.info("=" * 50)
         logger.info("TEST SUMMARY")
         logger.info("=" * 50)
 

@@ -19,6 +19,7 @@ class ThresholdValidator:
         self.flag_last_traffic_threshold = config.get("flag_last_traffic_threshold", "-1")
         self.flag_at_100_percent_last_modified_threshold = config.get("flag_at_100_percent_last_modified_threshold", "-1")
         self.flag_at_100_percent_last_traffic_threshold = config.get("flag_at_100_percent_last_traffic_threshold", "-1")
+        self.debug = config.get("debug", False)
 
     def _check_flag_threshold(
         self,
@@ -30,7 +31,13 @@ class ThresholdValidator:
         check_100_percent: bool = False,
     ) -> bool:
         """Generic helper for checking flag thresholds based on timestamps"""
+        if self.debug:
+            logger.debug(f"Starting threshold check: attribute={attribute_name}, threshold={threshold_value}, check_100_percent={check_100_percent}")
+            logger.debug(f"Checking {len(flags_in_code)} flags: {flags_in_code}")
+
         if threshold_value == "-1":
+            if self.debug:
+                logger.debug("Threshold check skipped (not configured)")
             return True  # Skip check if not configured
 
         # Parse duration string (e.g., "90d 10h 30m") to seconds
@@ -40,8 +47,13 @@ class ThresholdValidator:
             return True
 
         threshold_timestamp = time.time() - threshold_seconds
+        if self.debug:
+            logger.debug(f"Threshold parsed: {threshold_value} = {threshold_seconds} seconds = timestamp {threshold_timestamp}")
 
         for flag in flags_in_code:
+            if self.debug:
+                logger.debug(f"Checking flag '{flag}' against threshold")
+
             # Skip permanent flags - fast dictionary lookup with safe access
             meta_flag = meta_flag_data.get(flag)
             if meta_flag:
@@ -63,6 +75,8 @@ class ThresholdValidator:
                                     break
 
                         if is_permanent:
+                            if self.debug:
+                                logger.debug(f"Flag '{flag}' has permanent tag, skipping threshold check")
                             logger.info(f"Feature flag {flag} has a permanent tag")
                             continue
                     except Exception as e:
@@ -76,13 +90,22 @@ class ThresholdValidator:
                     flag_detail = detail
                     break
 
+            if self.debug:
+                logger.debug(f"Flag '{flag}': detail found = {flag_detail is not None}")
+
             if flag_detail:
                 # Get the timestamp attribute dynamically
                 timestamp = getattr(flag_detail, attribute_name, None)
+                if self.debug:
+                    logger.debug(f"Flag '{flag}': {attribute_name} = {timestamp}, threshold = {threshold_timestamp}")
+
                 if isinstance(timestamp, int) and timestamp < threshold_timestamp and not check_100_percent:
                     # Format last activity time
                     last_activity = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
                     flag_type = "modified" if attribute_name == "lastUpdateTime" else "receiving traffic"
+
+                    if self.debug:
+                        logger.debug(f"Flag '{flag}': threshold violation detected (last {flag_type}: {last_activity})")
 
                     error_msg = ErrorMessageFormatter.format_stale_flag_error(flag, threshold_value, last_activity, flag_type)
                     logger.error(error_msg)
@@ -93,25 +116,39 @@ class ThresholdValidator:
                         last_activity = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
                         flag_type = "modified" if attribute_name == "lastUpdateTime" else "receiving traffic"
 
+                        if self.debug:
+                            logger.debug(f"Flag '{flag}': 100% flag threshold violation detected (last {flag_type}: {last_activity})")
+
                         error_msg = ErrorMessageFormatter.format_stale_flag_error(flag, threshold_value, last_activity, flag_type)
                         logger.error(error_msg)
                         return False
+                    elif self.debug:
+                        logger.debug(f"Flag '{flag}': not at 100%, skipping 100% threshold check")
 
         return True
 
     def _is_flag_at_100_percent(self, flag: str, flag_data: List) -> bool:
         """Check if a flag is at 100% traffic allocation"""
+        if self.debug:
+            logger.debug(f"Checking if flag '{flag}' is at 100% traffic allocation")
         try:
             for flag_detail in flag_data:
                 if getattr(flag_detail, "name", None) == flag:
                     # Safely check traffic allocation
                     traffic_allocation = getattr(flag_detail, "_traffic_allocation", None)
+                    if self.debug:
+                        logger.debug(f"Flag '{flag}': traffic allocation = {traffic_allocation}")
                     if traffic_allocation != 100:
+                        if self.debug:
+                            logger.debug(f"Flag '{flag}': traffic allocation is not 100%, continuing")
                         continue
 
                     # Safely check rules
                     rules = getattr(flag_detail, "_rules", None)
                     default_rule = getattr(flag_detail, "_default_rule", None)
+
+                    if self.debug:
+                        logger.debug(f"Flag '{flag}': rules = {rules}, default_rule = {default_rule is not None}")
 
                     # Check if rules is empty and default rule has 100% bucket
                     if rules == [] and default_rule is not None:
@@ -120,11 +157,19 @@ class ThresholdValidator:
                             try:
                                 # Safely check if any bucket has size 100
                                 if hasattr(buckets, "any"):
-                                    return buckets.any(lambda bucket: getattr(bucket, "size", 0) == 100)
+                                    result = buckets.any(lambda bucket: getattr(bucket, "size", 0) == 100)
+                                    if self.debug:
+                                        logger.debug(f"Flag '{flag}': bucket check result = {result}")
+                                    return result
                                 else:
                                     # If buckets is a list, iterate manually
                                     for bucket in buckets:
-                                        if getattr(bucket, "size", 0) == 100:
+                                        bucket_size = getattr(bucket, "size", 0)
+                                        if self.debug:
+                                            logger.debug(f"Flag '{flag}': bucket size = {bucket_size}")
+                                        if bucket_size == 100:
+                                            if self.debug:
+                                                logger.debug(f"Flag '{flag}': found 100% bucket")
                                             return True
                             except Exception as e:
                                 logger.debug(f"Error checking buckets for flag {flag}: {e}")
@@ -134,9 +179,15 @@ class ThresholdValidator:
                     if rules and len(rules) > 0:
                         first_rule = rules[0]
                         rule_allocation = getattr(first_rule, "allocation", None)
+                        if self.debug:
+                            logger.debug(f"Flag '{flag}': first rule allocation = {rule_allocation}")
                         if rule_allocation == 100:
+                            if self.debug:
+                                logger.debug(f"Flag '{flag}': first rule has 100% allocation")
                             return True
 
+            if self.debug:
+                logger.debug(f"Flag '{flag}': not at 100% traffic allocation")
             return False
 
         except Exception as e:
