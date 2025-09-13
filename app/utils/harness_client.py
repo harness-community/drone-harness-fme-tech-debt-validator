@@ -81,7 +81,7 @@ class HarnessApiClient:
                     production_env_found = True
                     logger.info(f"Found production environment: {environment.name}")
 
-                    flagDefs = self.client.split_definitions.list(workspace.id, environment.id)
+                    flagDefs = self.client.split_definitions.list(environment.id, workspace.id)
                     for flagDef in flagDefs:
                         self.flag_data.append(flagDef)
 
