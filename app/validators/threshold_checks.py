@@ -64,24 +64,27 @@ class ThresholdValidator:
                         if hasattr(tags, "map") and hasattr(tags, "any"):
                             # Use built-in methods if available
                             def get_tag_name(tag):
-                                return (getattr(tag, "name", None) or
-                                       getattr(tag, "tag", None) or
-                                       getattr(tag, "label", None) or
-                                       getattr(tag, "value", None) or
-                                       str(tag) or "").lower()
+                                return (
+                                    getattr(tag, "name", None)
+                                    or getattr(tag, "tag", None)
+                                    or getattr(tag, "label", None)
+                                    or getattr(tag, "value", None)
+                                    or str(tag)
+                                    or ""
+                                ).lower()
 
-                            is_permanent = tags.map(get_tag_name).any(
-                                lambda tag: tag in self.permanent_flags_tag.lower().split(",")
-                            )
+                            is_permanent = tags.map(get_tag_name).any(lambda tag: tag in self.permanent_flags_tag.lower().split(","))
                         else:
                             # Fallback for list-like tags
                             for tag in tags:
                                 # Try different possible attribute names
-                                tag_name = (getattr(tag, "name", None) or
-                                           getattr(tag, "tag", None) or
-                                           getattr(tag, "label", None) or
-                                           getattr(tag, "value", None) or
-                                           str(tag))
+                                tag_name = (
+                                    getattr(tag, "name", None)
+                                    or getattr(tag, "tag", None)
+                                    or getattr(tag, "label", None)
+                                    or getattr(tag, "value", None)
+                                    or str(tag)
+                                )
                                 if tag_name and tag_name.lower() in self.permanent_flags_tag.lower().split(","):
                                     is_permanent = True
                                     break
@@ -109,7 +112,9 @@ class ThresholdValidator:
                 # Get the timestamp attribute dynamically
                 timestamp = getattr(flag_detail, attribute_name, None)
                 if self.debug:
-                    timestamp_readable = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S") if isinstance(timestamp, int) else "N/A"
+                    timestamp_readable = (
+                        datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S") if isinstance(timestamp, int) else "N/A"
+                    )
                     threshold_readable = datetime.datetime.fromtimestamp(threshold_timestamp).strftime("%Y-%m-%d %H:%M:%S")
                     logger.debug(f"Flag '{flag}': {attribute_name} = {timestamp} ({timestamp_readable})")
                     logger.debug(f"Flag '{flag}': threshold = {threshold_timestamp} ({threshold_readable})")

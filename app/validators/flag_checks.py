@@ -42,14 +42,26 @@ class FlagValidator:
                                     tag_attrs = dir(tag)
                                     tag_details.append(f"attrs: {[attr for attr in tag_attrs if not attr.startswith('_')]}")
                                     # Try different possible attribute names
-                                    name = getattr(tag, "name", None) or getattr(tag, "tag", None) or getattr(tag, "label", None) or getattr(tag, "value", None) or str(tag)
+                                    name = (
+                                        getattr(tag, "name", None)
+                                        or getattr(tag, "tag", None)
+                                        or getattr(tag, "label", None)
+                                        or getattr(tag, "value", None)
+                                        or str(tag)
+                                    )
                                     tag_names.append(name if name else "")
                             else:
                                 for tag in tags:
                                     tag_attrs = dir(tag)
                                     tag_details.append(f"attrs: {[attr for attr in tag_attrs if not attr.startswith('_')]}")
                                     # Try different possible attribute names
-                                    name = getattr(tag, "name", None) or getattr(tag, "tag", None) or getattr(tag, "label", None) or getattr(tag, "value", None) or str(tag)
+                                    name = (
+                                        getattr(tag, "name", None)
+                                        or getattr(tag, "tag", None)
+                                        or getattr(tag, "label", None)
+                                        or getattr(tag, "value", None)
+                                        or str(tag)
+                                    )
                                     tag_names.append(name if name else "")
                         except Exception as e:
                             tag_names = ["<unable to read tags>"]
@@ -64,12 +76,16 @@ class FlagValidator:
                         if hasattr(tags, "map") and hasattr(tags, "any"):
                             # Use built-in methods if available
                             for removal_tag in self.remove_these_flags_tag.lower().split(","):
+
                                 def get_tag_name(tag):
-                                    return (getattr(tag, "name", None) or
-                                           getattr(tag, "tag", None) or
-                                           getattr(tag, "label", None) or
-                                           getattr(tag, "value", None) or
-                                           str(tag) or "").lower()
+                                    return (
+                                        getattr(tag, "name", None)
+                                        or getattr(tag, "tag", None)
+                                        or getattr(tag, "label", None)
+                                        or getattr(tag, "value", None)
+                                        or str(tag)
+                                        or ""
+                                    ).lower()
 
                                 if tags.map(get_tag_name).any(lambda tag: tag == removal_tag.strip()):
                                     removal_tag_found = removal_tag.strip()
@@ -78,11 +94,13 @@ class FlagValidator:
                             # Fallback for list-like tags
                             for tag in tags:
                                 # Try different possible attribute names
-                                tag_name = (getattr(tag, "name", None) or
-                                           getattr(tag, "tag", None) or
-                                           getattr(tag, "label", None) or
-                                           getattr(tag, "value", None) or
-                                           str(tag))
+                                tag_name = (
+                                    getattr(tag, "name", None)
+                                    or getattr(tag, "tag", None)
+                                    or getattr(tag, "label", None)
+                                    or getattr(tag, "value", None)
+                                    or str(tag)
+                                )
                                 if tag_name and tag_name.lower() in [t.strip() for t in self.remove_these_flags_tag.lower().split(",")]:
                                     removal_tag_found = tag_name
                                     break
