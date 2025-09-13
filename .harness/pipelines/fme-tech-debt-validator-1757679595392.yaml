@@ -67,6 +67,6 @@ pipeline:
           pipeline: Build_sample_code_to_validate_1757685619630
           project: Workshop
           inputSetReferences:
-            - Build_sample_code_to_validate_1757685619630pushtriggerinputset
+            - test
         when:
           pipelineStatus: Success
