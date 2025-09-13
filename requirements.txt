@@ -3,5 +3,5 @@ splitapiclient==3.5.5
 pytimeparse==1.1.8
 esprima==4.0.1
 javalang==0.13.0
-tree-sitter==0.21.3
+pygments==2.17.2
 gitpython==3.1.40

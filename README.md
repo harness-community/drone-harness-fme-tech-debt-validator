@@ -79,7 +79,7 @@ The plugin uses **AST (Abstract Syntax Tree) parsing** with **regex fallback** f
 - **JavaScript/TypeScript** (.js/.jsx): Full AST parsing with variable resolution
 - **Java** (.java): AST parsing using javalang library
 - **Python** (.py): Built-in AST parsing support
-- **C#** (.cs): Enhanced regex parsing with variable resolution
+- **C#** (.cs): Lexical parsing using pygments with regex fallback
 - **Other files**: Regex pattern matching fallback
 
 ### What CAN Be Detected ✅
@@ -138,7 +138,7 @@ The plugin uses **AST (Abstract Syntax Tree) parsing** with **regex fallback** f
 | `.js`, `.jsx` | JavaScript AST | ✅ Yes | `getTreatment("flag")`, `getTreatments(["flag1", "flag2"])` |
 | `.java` | Java AST | ✅ Yes | `getTreatment("flag")`, `getTreatments(Arrays.asList("flag1", "flag2"))` |
 | `.py` | Python AST | ✅ Yes | `get_treatment("flag")`, `get_treatments(["flag1", "flag2"])` |
-| `.cs` | Enhanced Regex | ✅ Yes | `GetTreatment("flag")`, `GetTreatments("key", flagList)` |
+| `.cs` | Lexical Parsing | ✅ Yes | `GetTreatment("flag")`, `GetTreatments("key", flagList)` |
 | Others | Regex Fallback | ❌ No | `getTreatment("literal-only")`, `getTreatments(["flag1"])` |
 
 ### Best Practices for Maximum Detection

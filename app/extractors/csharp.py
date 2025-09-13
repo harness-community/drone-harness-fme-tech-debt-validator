@@ -1,118 +1,103 @@
-"""C# feature flag extraction using tree-sitter AST parsing with regex fallback."""
+"""C# feature flag extraction using lexical parsing with regex fallback."""
 
 import logging
-import os
 import re
 from typing import List
 
 try:
-    import tree_sitter
+    from pygments.lexers import get_lexer_by_name
+    from pygments.token import Token
 except ImportError:
-    tree_sitter = None
+    get_lexer_by_name = None
+    Token = None
 
 logger = logging.getLogger(__name__)
 
 
 def extract_flags_ast_csharp(content: str) -> List[str]:
-    """Extract feature flags from C# using tree-sitter AST parsing"""
-    if not tree_sitter:
-        # Fallback to regex if tree-sitter is not available
+    """Extract feature flags from C# using lexical parsing with pygments"""
+    if not get_lexer_by_name or not Token:
+        # Fallback to regex if pygments is not available
         return _extract_flags_csharp_regex_fallback(content)
 
     try:
-        # Try to set up tree-sitter C# parser
-        Language = tree_sitter.Language
-
-        # Try to load the C# language from the cloned repository
-        csharp_grammar_path = os.path.join(os.getcwd(), "tree-sitter-c-sharp")
-        if not os.path.exists(csharp_grammar_path):
-            # Fallback to regex if grammar not available
-            return _extract_flags_csharp_regex_fallback(content)
-
-        # Build and load C# language
-        try:
-            csharp_language = Language.build_library("build/csharp.so", [csharp_grammar_path])
-            csharp = Language(csharp_language, "c_sharp")
-        except Exception:
-            # If building fails, fallback to regex
-            return _extract_flags_csharp_regex_fallback(content)
-
-        # Create parser and parse content
-        parser = tree_sitter.Parser()
-        parser.set_language(csharp)
-        tree = parser.parse(bytes(content, "utf8"))
-
-        variables = {}
-        flags = []
-
-        def walk_tree(node):
-            # Variable declarations: string flagName = "value";
-            if node.type == "variable_declaration":
-                for child in node.children:
-                    if child.type == "variable_declarator":
-                        var_name = None
-                        var_value = None
-                        for declarator_child in child.children:
-                            if declarator_child.type == "identifier":
-                                var_name = content[declarator_child.start_byte : declarator_child.end_byte]
-                            elif declarator_child.type == "equals_value_clause":
-                                for value_child in declarator_child.children:
-                                    if value_child.type == "string_literal":
-                                        # Remove quotes from string literal
-                                        var_value = content[value_child.start_byte + 1 : value_child.end_byte - 1]
-
-                        if var_name and var_value:
-                            variables[var_name] = var_value
-
-            # Method invocations: client.GetTreatment("flag")
-            elif node.type == "invocation_expression":
-                method_name = None
-                # Find method name
-                for child in node.children:
-                    if child.type == "member_access_expression":
-                        for member_child in child.children:
-                            if member_child.type == "identifier":
-                                method_name = content[member_child.start_byte : member_child.end_byte]
-                    elif child.type == "identifier":
-                        method_name = content[child.start_byte : child.end_byte]
-
-                # Check if this is a feature flag method (including plural forms and async variants)
-                if method_name and ("GetTreatment" in method_name or "Treatment" in method_name):
-                    # Extract arguments
-                    for child in node.children:
-                        if child.type == "argument_list":
-                            for arg_child in child.children:
-                                if arg_child.type == "argument":
-                                    for arg_value in arg_child.children:
-                                        if arg_value.type == "string_literal":
-                                            # Extract string literal value (remove quotes)
-                                            flag_value = content[arg_value.start_byte + 1 : arg_value.end_byte - 1]
-                                            flags.append(flag_value)
-                                        elif arg_value.type == "identifier":
-                                            # Variable reference for single flags
-                                            var_name = content[arg_value.start_byte : arg_value.end_byte]
-                                            if var_name in variables:
-                                                flags.append(variables[var_name])
-                                        elif arg_value.type == "object_creation_expression":
-                                            # Handle: new List<string> { "flag1", "flag2" }
-                                            for creation_child in arg_value.children:
-                                                if creation_child.type == "initializer_expression":
-                                                    for init_child in creation_child.children:
-                                                        if init_child.type == "string_literal":
-                                                            flag_value = content[init_child.start_byte + 1 : init_child.end_byte - 1]
-                                                            flags.append(flag_value)
-
-            # Recursively walk children
-            for child in node.children:
-                walk_tree(child)
-
-        walk_tree(tree.root_node)
-        return list(set(flags))
-
+        return _extract_flags_csharp_lexical(content)
     except Exception as e:
-        logger.debug(f"Tree-sitter C# AST parsing failed: {e}")
+        logger.debug(f"Lexical C# parsing failed: {e}")
         # Fallback to regex on any error
         return _extract_flags_csharp_regex_fallback(content)
+
+
+def _extract_flags_csharp_lexical(content: str) -> List[str]:
+    """Extract feature flags from C# using pygments lexical parsing"""
+    csharp_lexer = get_lexer_by_name('csharp')
+    tokens = list(csharp_lexer.get_tokens(content))
+
+    variables = {}
+    flags = []
+    i = 0
+
+    while i < len(tokens):
+        token_type, value = tokens[i]
+
+        # Variable declarations: string flagName = "value";
+        if (token_type == Token.Keyword.Type and value == "string") or (token_type == Token.Keyword and value == "var"):
+            # Look for variable assignment pattern
+            j = i + 1
+            var_name = None
+
+            # Skip whitespace to find variable name
+            while j < len(tokens) and tokens[j][1].strip() == '':
+                j += 1
+
+            if j < len(tokens) and tokens[j][0] in [Token.Name, Token.Name.Variable]:
+                var_name = tokens[j][1]
+                j += 1
+
+                # Look for assignment operator
+                while j < len(tokens) and tokens[j][1].strip() in ['', '=']:
+                    j += 1
+
+                # Look for string literal value
+                if j < len(tokens) and tokens[j][0] == Token.Literal.String:
+                    var_value = tokens[j][1].strip('"\'')
+                    if var_name and var_value:
+                        variables[var_name] = var_value
+
+        # Method calls: look for GetTreatment methods
+        elif (token_type in [Token.Name, Token.Name.Function] and "GetTreatment" in value):
+            # Found a GetTreatment method, now look for the opening parenthesis
+            j = i + 1
+            while j < len(tokens) and tokens[j][1].strip() in ['', '.']:
+                j += 1
+
+            # Should find opening parenthesis
+            if j < len(tokens) and tokens[j][1] == '(':
+                # Extract all string literals until closing parenthesis
+                paren_count = 1
+                j += 1
+
+                while j < len(tokens) and paren_count > 0:
+                    t_type, t_value = tokens[j]
+
+                    if t_value == '(':
+                        paren_count += 1
+                    elif t_value == ')':
+                        paren_count -= 1
+                    elif t_type == Token.Literal.String:
+                        # Remove quotes from string literal
+                        clean_string = t_value.strip('"\'')
+                        if clean_string:
+                            flags.append(clean_string)
+                    elif t_type in [Token.Name, Token.Name.Variable] and t_value in variables:
+                        # Variable reference
+                        flags.append(variables[t_value])
+
+                    j += 1
+
+        i += 1
+
+    return list(set(flags))
 
 
 def _extract_flags_csharp_regex_fallback(content: str) -> List[str]:
@@ -127,10 +112,14 @@ def _extract_flags_csharp_regex_fallback(content: str) -> List[str]:
         variables[var_name] = var_value
 
     # GetTreatment calls with string literals - extract all string arguments (including plural forms)
-    # More precise pattern to avoid false positives
-    direct_pattern = r'(?:^|[^a-zA-Z])GetTreatments?(?:WithConfig)?(?:Async)?\s*\([^)]*?["\']([^"\']+?)["\']'
-    direct_matches = re.findall(direct_pattern, content)
-    flags.extend(direct_matches)
+    # Find all GetTreatment method calls first, then extract all string literals from each
+    method_pattern = r'(?:^|[^a-zA-Z])GetTreatments?(?:WithConfig)?(?:Async)?\s*\([^)]+\)'
+    for method_match in re.finditer(method_pattern, content):
+        method_call = method_match.group(0)
+        # Extract all string literals from this specific method call
+        string_pattern = r'["\']([^"\']+)["\']'
+        strings = re.findall(string_pattern, method_call)
+        flags.extend(strings)
 
     # GetTreatment calls with variables - extract all variable arguments
     var_usage_pattern = r"GetTreatments?(?:WithConfig)?(?:Async)?\([^)]*\b([a-zA-Z_][a-zA-Z0-9_]*)\b[^)]*\)"
