@@ -1,5 +1,6 @@
 """Feature flag validation checks."""
 
+import json
 import logging
 from typing import Dict, List
 from formatters import ErrorMessageFormatter
@@ -49,7 +50,19 @@ class FlagValidator:
                                         or getattr(tag, "value", None)
                                         or str(tag)
                                     )
-                                    tag_names.append(name if name else "")
+
+                                    # If name looks like JSON, try to parse it
+                                    if name and isinstance(name, str) and name.startswith("{") and name.endswith("}"):
+                                        try:
+                                            # Replace single quotes with double quotes for valid JSON
+                                            json_str = name.replace("'", '"')
+                                            parsed_tag = json.loads(json_str)
+                                            actual_name = parsed_tag.get("name", name)
+                                            tag_names.append(actual_name)
+                                        except (json.JSONDecodeError, AttributeError):
+                                            tag_names.append(name if name else "")
+                                    else:
+                                        tag_names.append(name if name else "")
                             else:
                                 for tag in tags:
                                     tag_attrs = dir(tag)
@@ -62,7 +75,19 @@ class FlagValidator:
                                         or getattr(tag, "value", None)
                                         or str(tag)
                                     )
-                                    tag_names.append(name if name else "")
+
+                                    # If name looks like JSON, try to parse it
+                                    if name and isinstance(name, str) and name.startswith("{") and name.endswith("}"):
+                                        try:
+                                            # Replace single quotes with double quotes for valid JSON
+                                            json_str = name.replace("'", '"')
+                                            parsed_tag = json.loads(json_str)
+                                            actual_name = parsed_tag.get("name", name)
+                                            tag_names.append(actual_name)
+                                        except (json.JSONDecodeError, AttributeError):
+                                            tag_names.append(name if name else "")
+                                    else:
+                                        tag_names.append(name if name else "")
                         except Exception as e:
                             tag_names = ["<unable to read tags>"]
                             tag_details = [f"<error: {e}>"]
@@ -78,31 +103,30 @@ class FlagValidator:
                             for removal_tag in self.remove_these_flags_tag.lower().split(","):
 
                                 def get_tag_name(tag):
-                                    return (
+                                    name = (
                                         getattr(tag, "name", None)
                                         or getattr(tag, "tag", None)
                                         or getattr(tag, "label", None)
                                         or getattr(tag, "value", None)
                                         or str(tag)
                                         or ""
-                                    ).lower()
+                                    )
+
+                                    # If name looks like JSON, try to parse it
+                                    if name and isinstance(name, str) and name.startswith("{") and name.endswith("}"):
+                                        try:
+                                            # Replace single quotes with double quotes for valid JSON
+                                            json_str = name.replace("'", '"')
+                                            parsed_tag = json.loads(json_str)
+                                            actual_name = parsed_tag.get("name", name)
+                                            return actual_name.lower()
+                                        except (json.JSONDecodeError, AttributeError):
+                                            return name.lower()
+                                    else:
+                                        return name.lower()
 
                                 if tags.map(get_tag_name).any(lambda tag: tag == removal_tag.strip()):
                                     removal_tag_found = removal_tag.strip()
-                                    break
-                        else:
-                            # Fallback for list-like tags
-                            for tag in tags:
-                                # Try different possible attribute names
-                                tag_name = (
-                                    getattr(tag, "name", None)
-                                    or getattr(tag, "tag", None)
-                                    or getattr(tag, "label", None)
-                                    or getattr(tag, "value", None)
-                                    or str(tag)
-                                )
-                                if tag_name and tag_name.lower() in [t.strip() for t in self.remove_these_flags_tag.lower().split(",")]:
-                                    removal_tag_found = tag_name
                                     break
 
                         if removal_tag_found:
