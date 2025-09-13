@@ -85,6 +85,8 @@ class FlagValidator:
                                         tag_names.append(name if name else "")
                         except Exception as e:
                             tag_names = ["<unable to read tags>"]
+                            if self.debug:
+                                logger.debug(f"Flag '{flag}': unable to read tags: {e}")
                         logger.debug(f"Flag '{flag}': tag names = {tag_names}")
 
                 if tags:
