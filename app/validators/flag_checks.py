@@ -36,12 +36,9 @@ class FlagValidator:
                     logger.debug(f"Flag '{flag}': tags found = {tags is not None}")
                     if tags:
                         tag_names = []
-                        tag_details = []
                         try:
                             if hasattr(tags, "map"):
                                 for tag in tags:
-                                    tag_attrs = dir(tag)
-                                    tag_details.append(f"attrs: {[attr for attr in tag_attrs if not attr.startswith('_')]}")
                                     # Try different possible attribute names
                                     name = (
                                         getattr(tag, "name", None)
@@ -65,8 +62,6 @@ class FlagValidator:
                                         tag_names.append(name if name else "")
                             else:
                                 for tag in tags:
-                                    tag_attrs = dir(tag)
-                                    tag_details.append(f"attrs: {[attr for attr in tag_attrs if not attr.startswith('_')]}")
                                     # Try different possible attribute names
                                     name = (
                                         getattr(tag, "name", None)
@@ -90,44 +85,46 @@ class FlagValidator:
                                         tag_names.append(name if name else "")
                         except Exception as e:
                             tag_names = ["<unable to read tags>"]
-                            tag_details = [f"<error: {e}>"]
                         logger.debug(f"Flag '{flag}': tag names = {tag_names}")
-                        logger.debug(f"Flag '{flag}': tag details = {tag_details}")
 
                 if tags:
                     try:
                         # Check if tags have the removal tag
                         removal_tag_found = None
-                        if hasattr(tags, "map") and hasattr(tags, "any"):
-                            # Use built-in methods if available
-                            for removal_tag in self.remove_these_flags_tag.lower().split(","):
+                        if self.debug:
+                            logger.debug(f"Flag '{flag}': checking removal tags, configured removal tags: '{self.remove_these_flags_tag}'")
 
-                                def get_tag_name(tag):
-                                    name = (
-                                        getattr(tag, "name", None)
-                                        or getattr(tag, "tag", None)
-                                        or getattr(tag, "label", None)
-                                        or getattr(tag, "value", None)
-                                        or str(tag)
-                                        or ""
-                                    )
+                        # Simple iteration through tags since they don't have map/any methods
+                        for tag in tags:
+                            # Try different possible attribute names
+                            tag_name = (
+                                getattr(tag, "name", None)
+                                or getattr(tag, "tag", None)
+                                or getattr(tag, "label", None)
+                                or getattr(tag, "value", None)
+                                or str(tag)
+                            )
 
-                                    # If name looks like JSON, try to parse it
-                                    if name and isinstance(name, str) and name.startswith("{") and name.endswith("}"):
-                                        try:
-                                            # Replace single quotes with double quotes for valid JSON
-                                            json_str = name.replace("'", '"')
-                                            parsed_tag = json.loads(json_str)
-                                            actual_name = parsed_tag.get("name", name)
-                                            return actual_name.lower()
-                                        except (json.JSONDecodeError, AttributeError):
-                                            return name.lower()
-                                    else:
-                                        return name.lower()
+                            # If tag_name looks like JSON, try to parse it
+                            if tag_name and isinstance(tag_name, str) and tag_name.startswith("{") and tag_name.endswith("}"):
+                                try:
+                                    # Replace single quotes with double quotes for valid JSON
+                                    json_str = tag_name.replace("'", '"')
+                                    parsed_tag = json.loads(json_str)
+                                    actual_tag_name = parsed_tag.get("name", tag_name)
+                                except (json.JSONDecodeError, AttributeError):
+                                    actual_tag_name = tag_name
+                            else:
+                                actual_tag_name = tag_name
 
-                                if tags.map(get_tag_name).any(lambda tag: tag == removal_tag.strip()):
-                                    removal_tag_found = removal_tag.strip()
-                                    break
+                            if self.debug:
+                                logger.debug(f"Flag '{flag}': comparing tag '{actual_tag_name}' against removal tags")
+
+                            if actual_tag_name and actual_tag_name.lower() in [t.strip() for t in self.remove_these_flags_tag.lower().split(",")]:
+                                removal_tag_found = actual_tag_name
+                                if self.debug:
+                                    logger.debug(f"Flag '{flag}': found matching removal tag '{actual_tag_name}'")
+                                break
 
                         if removal_tag_found:
                             files_with_flag = flag_file_mapping.get(flag, [])
