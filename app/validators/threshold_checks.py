@@ -399,6 +399,8 @@ class ThresholdValidator:
                     # Check if rules is empty and default rule has 100% bucket
                     if rules == [] and default_rule is not None:
                         buckets = getattr(default_rule, "buckets", None)
+                        if self.debug:
+                            logger.debug(f"Flag '{flag}': buckets = {buckets}")
                         if buckets is not None:
                             try:
                                 # Safely check if any bucket has size 100
@@ -409,6 +411,8 @@ class ThresholdValidator:
                                     return result
                                 else:
                                     # If buckets is a list, iterate manually
+                                    if self.debug:
+                                        logger.debug(f"Flag '{flag}': checking {len(buckets)} buckets manually")
                                     for bucket in buckets:
                                         bucket_size = getattr(bucket, "size", 0)
                                         if self.debug:
@@ -417,9 +421,14 @@ class ThresholdValidator:
                                             if self.debug:
                                                 logger.debug(f"Flag '{flag}': found 100% bucket")
                                             return True
+                                    if self.debug:
+                                        logger.debug(f"Flag '{flag}': no 100% buckets found")
                             except Exception as e:
                                 logger.debug(f"Error checking buckets for flag {flag}: {e}")
                                 continue
+                        else:
+                            if self.debug:
+                                logger.debug(f"Flag '{flag}': buckets is None")
 
                     # Check if first rule has 100% allocation
                     if rules and len(rules) > 0:
