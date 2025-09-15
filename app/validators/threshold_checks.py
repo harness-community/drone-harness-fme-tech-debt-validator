@@ -108,6 +108,14 @@ class ThresholdValidator:
                 # Get the timestamp attribute dynamically
                 timestamp = getattr(flag_detail, attribute_name, None)
                 if self.debug:
+                    logger.debug(f"Flag '{flag}': Raw {attribute_name} value = {timestamp} (type: {type(timestamp)})")
+
+                    # Check if timestamp needs conversion from milliseconds to seconds
+                    if isinstance(timestamp, int) and timestamp > 1e10:  # Likely milliseconds
+                        timestamp_seconds = timestamp // 1000
+                        logger.debug(f"Flag '{flag}': Converting from milliseconds: {timestamp} -> {timestamp_seconds}")
+                        timestamp = timestamp_seconds
+
                     timestamp_readable = (
                         datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S") if isinstance(timestamp, int) else "N/A"
                     )
@@ -115,6 +123,10 @@ class ThresholdValidator:
                     logger.debug(f"Flag '{flag}': {attribute_name} = {timestamp} ({timestamp_readable})")
                     logger.debug(f"Flag '{flag}': threshold = {threshold_timestamp} ({threshold_readable})")
                     logger.debug(f"Flag '{flag}': is_stale = {isinstance(timestamp, int) and timestamp < threshold_timestamp}")
+
+                # Convert milliseconds to seconds if needed
+                if isinstance(timestamp, int) and timestamp > 1e10:
+                    timestamp = timestamp // 1000
 
                 if isinstance(timestamp, int) and timestamp < threshold_timestamp and not check_100_percent:
                     # Format last activity time
