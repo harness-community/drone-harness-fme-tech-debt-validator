@@ -139,13 +139,15 @@ class ThresholdValidator:
                         logger.debug(f"Flag '{flag}': threshold violation detected (last {flag_type}: {last_activity})")
 
                     # Add to failed flags list instead of returning immediately
-                    failed_flags.append({
-                        "flag": flag,
-                        "threshold_value": threshold_value,
-                        "last_activity": last_activity,
-                        "flag_type": flag_type,
-                        "is_100_percent": False
-                    })
+                    failed_flags.append(
+                        {
+                            "flag": flag,
+                            "threshold_value": threshold_value,
+                            "last_activity": last_activity,
+                            "flag_type": flag_type,
+                            "is_100_percent": False,
+                        }
+                    )
 
                 elif isinstance(timestamp, int) and timestamp < threshold_timestamp and check_100_percent:
                     if self._is_flag_at_100_percent(flag, flag_data):
@@ -157,13 +159,15 @@ class ThresholdValidator:
                             logger.debug(f"Flag '{flag}': 100% flag threshold violation detected (last {flag_type}: {last_activity})")
 
                         # Add to failed flags list instead of returning immediately
-                        failed_flags.append({
-                            "flag": flag,
-                            "threshold_value": threshold_value,
-                            "last_activity": last_activity,
-                            "flag_type": flag_type,
-                            "is_100_percent": True
-                        })
+                        failed_flags.append(
+                            {
+                                "flag": flag,
+                                "threshold_value": threshold_value,
+                                "last_activity": last_activity,
+                                "flag_type": flag_type,
+                                "is_100_percent": True,
+                            }
+                        )
 
                     elif self.debug:
                         logger.debug(f"Flag '{flag}': not at 100%, skipping 100% threshold check")

@@ -170,8 +170,10 @@ class ErrorMessageFormatter:
 ║    • Consider if there's future A/B testing planned
 ║
 ║ 📖 RESOURCES:
-║    Flag Lifecycle: https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
-║    Technical Debt: https://developer.harness.io/docs/feature-management-experimentation/management-and-administration/admin-best-practices/managing-technical-debt/
+║    Flag Lifecycle: 
+║    https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
+║    Technical Debt: 
+║    https://developer.harness.io/docs/feature-management-experimentation/management-and-administration/admin-best-practices/managing-technical-debt/
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod
