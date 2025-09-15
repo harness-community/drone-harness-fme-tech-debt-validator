@@ -39,10 +39,12 @@ def create_mock_flag_meta(name: str, tags: List[str] = None) -> Mock:
     flag_meta.name = name
 
     if tags:
-        tag_mocks = [Mock(name=tag) for tag in tags]
+        tag_mocks = []
+        for tag_name in tags:
+            tag_mock = Mock()
+            tag_mock.name = tag_name  # Set as attribute, not constructor parameter
+            tag_mocks.append(tag_mock)
         flag_meta._tags = tag_mocks
-        # Mock the map/any chain for tag checking
-        flag_meta._tags.map = Mock(return_value=Mock(any=Mock(return_value=any(tag in ["deprecated", "remove"] for tag in tags))))
     else:
         flag_meta._tags = []
 

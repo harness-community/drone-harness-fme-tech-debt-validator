@@ -24,6 +24,33 @@ class FlagValidator:
             logger.debug(f"Max flags in project: '{self.max_flags_in_project}' {'(DISABLED)' if self.max_flags_in_project == '-1' else '(ENABLED)'}")
             logger.debug("====================================")
 
+    def _extract_tag_name(self, tag) -> str:
+        """Extract tag name from tag object with JSON parsing support."""
+        tag_name = getattr(tag, "name", None) or getattr(tag, "tag", None) or getattr(tag, "label", None) or getattr(tag, "value", None) or str(tag)
+
+        # Handle JSON-formatted tag names
+        if tag_name and isinstance(tag_name, str) and tag_name.startswith("{") and tag_name.endswith("}"):
+            try:
+                json_str = tag_name.replace("'", '"')
+                parsed_tag = json.loads(json_str)
+                return parsed_tag.get("name", tag_name)
+            except (json.JSONDecodeError, AttributeError):
+                return tag_name
+
+        return tag_name if tag_name else ""
+
+    def _extract_all_tag_names(self, tags) -> List[str]:
+        """Extract all tag names from tags collection."""
+        tag_names = []
+        try:
+            for tag in tags:
+                tag_names.append(self._extract_tag_name(tag))
+        except Exception as e:
+            if self.debug:
+                logger.debug(f"Unable to read tags: {e}")
+            return ["<unable to read tags>"]
+        return tag_names
+
     def check_removal_tags(self, flags_in_code: List[str], meta_flag_data: Dict, flag_file_mapping: Dict[str, List[str]]) -> bool:
         """Check if any flags in code have removal tags."""
         if self.debug:
@@ -42,98 +69,29 @@ class FlagValidator:
                 tags = getattr(flagMeta, "_tags", None)
                 if self.debug:
                     logger.debug(f"Flag '{flag}': tags found = {tags is not None}")
-                    if tags:
-                        tag_names = []
-                        try:
-                            if hasattr(tags, "map"):
-                                for tag in tags:
-                                    # Try different possible attribute names
-                                    name = (
-                                        getattr(tag, "name", None)
-                                        or getattr(tag, "tag", None)
-                                        or getattr(tag, "label", None)
-                                        or getattr(tag, "value", None)
-                                        or str(tag)
-                                    )
-
-                                    # If name looks like JSON, try to parse it
-                                    if name and isinstance(name, str) and name.startswith("{") and name.endswith("}"):
-                                        try:
-                                            # Replace single quotes with double quotes for valid JSON
-                                            json_str = name.replace("'", '"')
-                                            parsed_tag = json.loads(json_str)
-                                            actual_name = parsed_tag.get("name", name)
-                                            tag_names.append(actual_name)
-                                        except (json.JSONDecodeError, AttributeError):
-                                            tag_names.append(name if name else "")
-                                    else:
-                                        tag_names.append(name if name else "")
-                            else:
-                                for tag in tags:
-                                    # Try different possible attribute names
-                                    name = (
-                                        getattr(tag, "name", None)
-                                        or getattr(tag, "tag", None)
-                                        or getattr(tag, "label", None)
-                                        or getattr(tag, "value", None)
-                                        or str(tag)
-                                    )
-
-                                    # If name looks like JSON, try to parse it
-                                    if name and isinstance(name, str) and name.startswith("{") and name.endswith("}"):
-                                        try:
-                                            # Replace single quotes with double quotes for valid JSON
-                                            json_str = name.replace("'", '"')
-                                            parsed_tag = json.loads(json_str)
-                                            actual_name = parsed_tag.get("name", name)
-                                            tag_names.append(actual_name)
-                                        except (json.JSONDecodeError, AttributeError):
-                                            tag_names.append(name if name else "")
-                                    else:
-                                        tag_names.append(name if name else "")
-                        except Exception as e:
-                            tag_names = ["<unable to read tags>"]
-                            if self.debug:
-                                logger.debug(f"Flag '{flag}': unable to read tags: {e}")
-                        logger.debug(f"Flag '{flag}': tag names = {tag_names}")
 
                 if tags:
                     try:
+                        # Extract all tag names using the helper method
+                        tag_names = self._extract_all_tag_names(tags)
+                        if self.debug:
+                            logger.debug(f"Flag '{flag}': tag names = {tag_names}")
+
                         # Check if tags have the removal tag
                         removal_tag_found = None
                         if self.debug:
                             logger.debug(f"Flag '{flag}': checking removal tags, configured removal tags: '{self.remove_these_flags_tag}'")
 
-                        # Simple iteration through tags since they don't have map/any methods
-                        for tag in tags:
-                            # Try different possible attribute names
-                            tag_name = (
-                                getattr(tag, "name", None)
-                                or getattr(tag, "tag", None)
-                                or getattr(tag, "label", None)
-                                or getattr(tag, "value", None)
-                                or str(tag)
-                            )
+                        removal_tags = [t.strip().lower() for t in self.remove_these_flags_tag.lower().split(",") if t.strip()]
 
-                            # If tag_name looks like JSON, try to parse it
-                            if tag_name and isinstance(tag_name, str) and tag_name.startswith("{") and tag_name.endswith("}"):
-                                try:
-                                    # Replace single quotes with double quotes for valid JSON
-                                    json_str = tag_name.replace("'", '"')
-                                    parsed_tag = json.loads(json_str)
-                                    actual_tag_name = parsed_tag.get("name", tag_name)
-                                except (json.JSONDecodeError, AttributeError):
-                                    actual_tag_name = tag_name
-                            else:
-                                actual_tag_name = tag_name
-
+                        for tag_name in tag_names:
                             if self.debug:
-                                logger.debug(f"Flag '{flag}': comparing tag '{actual_tag_name}' against removal tags")
+                                logger.debug(f"Flag '{flag}': comparing tag '{tag_name}' against removal tags")
 
-                            if actual_tag_name and actual_tag_name.lower() in [t.strip() for t in self.remove_these_flags_tag.lower().split(",")]:
-                                removal_tag_found = actual_tag_name
+                            if tag_name and tag_name.lower() in removal_tags:
+                                removal_tag_found = tag_name
                                 if self.debug:
-                                    logger.debug(f"Flag '{flag}': found matching removal tag '{actual_tag_name}'")
+                                    logger.debug(f"Flag '{flag}': found matching removal tag '{tag_name}'")
                                 break
 
                         if removal_tag_found:

@@ -20,25 +20,30 @@ class CITestRunner:
     """Orchestrates feature flag CI testing workflow."""
 
     def __init__(self):
-        # Extract configuration from environment
+        """Initialize CI Test Runner with configuration, components, and data."""
         self.config = self._extract_config()
+        self._validate_configuration_or_exit()
+        self._initialize_components()
+        self._load_initial_data()
 
-        # Validate required configuration
+    def _validate_configuration_or_exit(self):
+        """Validate configuration and exit if invalid."""
         if not self._validate_configuration():
             sys.exit(1)
 
-        # Initialize components
+    def _initialize_components(self):
+        """Initialize all service components."""
         self.harness_client = HarnessApiClient(self.config)
         self.code_analyzer = GitCodeAnalyzer(self.config)
         self.flag_validator = FlagValidator(self.config)
         self.threshold_validator = ThresholdValidator(self.config)
 
-        # Initialize data - will be populated by separate method calls
+    def _load_initial_data(self):
+        """Load initial data required for processing."""
         if not self.harness_client.fetch_flags():
             logger.error("Failed to fetch flags from Harness - cannot proceed with testing")
             sys.exit(1)
 
-        # Get code changes and analyze for flags
         self.code_changes = self.code_analyzer.get_code_changes()
         self.flags_in_code = self.code_analyzer.analyze_code_for_flags(self.code_changes)
 
