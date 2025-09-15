@@ -229,24 +229,24 @@ class ThresholdValidator:
                 logger.debug(f"Running {check_name} with threshold {threshold_value}")
 
             # Run threshold check and collect failures
-            failed_flags = self._run_single_threshold_check(flags_in_code, meta_flag_data, flag_data, threshold_value, attribute_name, check_100_percent)
+            failed_flags = self._run_single_threshold_check(
+                flags_in_code, meta_flag_data, flag_data, threshold_value, attribute_name, check_100_percent
+            )
 
             # Consolidate failures by flag name
             for failure in failed_flags:
                 flag_name = failure["flag"]
                 if flag_name not in all_failed_flags:
-                    all_failed_flags[flag_name] = {
-                        "issues": [],
-                        "is_100_percent": failure["is_100_percent"],
-                        "flag": flag_name
-                    }
+                    all_failed_flags[flag_name] = {"issues": [], "is_100_percent": failure["is_100_percent"], "flag": flag_name}
 
-                all_failed_flags[flag_name]["issues"].append({
-                    "check_name": check_name,
-                    "threshold": threshold_value,
-                    "last_activity": failure["last_activity"],
-                    "flag_type": failure["flag_type"]
-                })
+                all_failed_flags[flag_name]["issues"].append(
+                    {
+                        "check_name": check_name,
+                        "threshold": threshold_value,
+                        "last_activity": failure["last_activity"],
+                        "flag_type": failure["flag_type"],
+                    }
+                )
 
         # Generate consolidated reports
         if all_failed_flags:
@@ -255,7 +255,9 @@ class ThresholdValidator:
 
         return True
 
-    def _run_single_threshold_check(self, flags_in_code: List[str], meta_flag_data: Dict, flag_data: List, threshold_value: str, attribute_name: str, check_100_percent: bool) -> List[Dict]:
+    def _run_single_threshold_check(
+        self, flags_in_code: List[str], meta_flag_data: Dict, flag_data: List, threshold_value: str, attribute_name: str, check_100_percent: bool
+    ) -> List[Dict]:
         """Run a single threshold check and return failures without logging errors"""
         from pytimeparse import parse as parse_duration
         import time
@@ -304,12 +306,7 @@ class ThresholdValidator:
                     last_activity = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
                     flag_type = "modified" if attribute_name == "last_update_time" else "receiving traffic"
 
-                    failed_flags.append({
-                        "flag": flag,
-                        "last_activity": last_activity,
-                        "flag_type": flag_type,
-                        "is_100_percent": check_100_percent
-                    })
+                    failed_flags.append({"flag": flag, "last_activity": last_activity, "flag_type": flag_type, "is_100_percent": check_100_percent})
 
         return failed_flags
 
