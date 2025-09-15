@@ -279,3 +279,4 @@ class TestPermanentFlagIntegration:
         assert "permanent-flag-2" not in failed_flag_names
         # regular-flag-2 should fail (it's at 100% and no recent traffic)
         assert "regular-flag-2" in failed_flag_names
+        
