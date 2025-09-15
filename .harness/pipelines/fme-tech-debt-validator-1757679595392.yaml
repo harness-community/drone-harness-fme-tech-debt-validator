@@ -81,6 +81,7 @@ pipeline:
           project: Workshop
           inputSetReferences:
             - Build_sample_code_to_validate_1757685619630prtriggerinputset
+            - Build_sample_code_to_validate_1757685619630pushtriggerinputset
           envVariables:
             DRONE_COMMIT_BEFORE: 590ec3ba509863c73812ace7650b3f7e0ea6ff6d
             DRONE_COMMIT_AFTER: 07144b95d773fb37b174b4ff17168326146a057f
