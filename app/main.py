@@ -130,9 +130,11 @@ class CITestRunner:
                 test_results.append({"test": test_name, "success": True})
             else:
                 logger.error(f"❌ {test_name} failed")
+                test_results.append({"test": test_name, "success": False})
             return success
         except Exception as e:
             logger.error(f"❌ {test_name} failed with exception: {e}")
+            test_results.append({"test": test_name, "success": False, "error": str(e)})
             return False
 
     def run_tests(self) -> bool:
