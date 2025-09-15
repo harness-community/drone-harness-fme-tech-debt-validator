@@ -396,39 +396,26 @@ class ThresholdValidator:
                     if self.debug:
                         logger.debug(f"Flag '{flag}': rules = {rules}, default_rule = {default_rule is not None}")
 
-                    # Check if rules is empty and default rule has 100% bucket
+                    # Check if rules is empty and default rule has 100% allocation
                     if rules == [] and default_rule is not None:
-                        buckets = getattr(default_rule, "buckets", None)
                         if self.debug:
-                            logger.debug(f"Flag '{flag}': buckets = {buckets}")
-                        if buckets is not None:
-                            try:
-                                # Safely check if any bucket has size 100
-                                if hasattr(buckets, "any"):
-                                    result = buckets.any(lambda bucket: getattr(bucket, "size", 0) == 100)
+                            logger.debug(f"Flag '{flag}': checking default rule with {len(default_rule)} items")
+                        try:
+                            # default_rule is a list of DefaultRule objects, each with treatment and size
+                            for rule_item in default_rule:
+                                rule_size = getattr(rule_item, "_size", 0)
+                                rule_treatment = getattr(rule_item, "_treatment", None)
+                                if self.debug:
+                                    logger.debug(f"Flag '{flag}': default rule item - treatment: {rule_treatment}, size: {rule_size}")
+                                if rule_size == 100:
                                     if self.debug:
-                                        logger.debug(f"Flag '{flag}': bucket check result = {result}")
-                                    return result
-                                else:
-                                    # If buckets is a list, iterate manually
-                                    if self.debug:
-                                        logger.debug(f"Flag '{flag}': checking {len(buckets)} buckets manually")
-                                    for bucket in buckets:
-                                        bucket_size = getattr(bucket, "size", 0)
-                                        if self.debug:
-                                            logger.debug(f"Flag '{flag}': bucket size = {bucket_size}")
-                                        if bucket_size == 100:
-                                            if self.debug:
-                                                logger.debug(f"Flag '{flag}': found 100% bucket")
-                                            return True
-                                    if self.debug:
-                                        logger.debug(f"Flag '{flag}': no 100% buckets found")
-                            except Exception as e:
-                                logger.debug(f"Error checking buckets for flag {flag}: {e}")
-                                continue
-                        else:
+                                        logger.debug(f"Flag '{flag}': found 100% default rule")
+                                    return True
                             if self.debug:
-                                logger.debug(f"Flag '{flag}': buckets is None")
+                                logger.debug(f"Flag '{flag}': no 100% default rules found")
+                        except Exception as e:
+                            logger.debug(f"Error checking default rule for flag {flag}: {e}")
+                            continue
 
                     # Check if first rule has 100% allocation
                     if rules and len(rules) > 0:
