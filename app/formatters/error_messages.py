@@ -84,7 +84,7 @@ class ErrorMessageFormatter:
         """Format error message for stale flags"""
         file_locations = ""
         if files_with_flag:
-            file_locations = f"""
+            file_locations = """
 ║ 📁 FOUND IN FILES:"""
             for file_path in files_with_flag[:5]:  # Limit to first 5 files
                 file_locations += f"\n║    • {file_path}"
