@@ -232,7 +232,7 @@ class ThresholdValidator:
             meta_flag_data,
             flag_data,
             self.flag_last_traffic_threshold,
-            "lastTrafficRecievedAt",
+            "lastTrafficReceivedAt",
         )
 
     def check_last_modified_threshold_100_percent(self, flags_in_code: List[str], meta_flag_data: Dict, flag_data: List) -> bool:
@@ -253,6 +253,6 @@ class ThresholdValidator:
             meta_flag_data,
             flag_data,
             self.flag_last_traffic_threshold,
-            "lastTrafficRecievedAt",
+            "lastTrafficReceivedAt",
             check_100_percent=True,
         )

@@ -54,7 +54,7 @@ def mock_harness_client():
     flag_def = Mock()
     flag_def.name = "test-flag"
     flag_def.lastUpdateTime = 1640995200  # 2022-01-01
-    flag_def.lastTrafficRecievedAt = 1640995200
+    flag_def.lastTrafficReceivedAt = 1640995200
     flag_def._traffic_allocation = 100
     flag_def._rules = []
     flag_def._default_rule = Mock()

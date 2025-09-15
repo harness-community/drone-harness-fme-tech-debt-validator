@@ -26,7 +26,7 @@ def create_mock_flag_detail(name: str, **kwargs) -> Mock:
     flag_detail = Mock()
     flag_detail.name = name
     flag_detail.lastUpdateTime = kwargs.get("lastUpdateTime", 1640995200)
-    flag_detail.lastTrafficRecievedAt = kwargs.get("lastTrafficRecievedAt", 1640995200)
+    flag_detail.lastTrafficReceivedAt = kwargs.get("lastTrafficReceivedAt", 1640995200)
     flag_detail._traffic_allocation = kwargs.get("traffic_allocation", 50)
     flag_detail._rules = kwargs.get("rules", [])
     flag_detail._default_rule = kwargs.get("default_rule", Mock())
