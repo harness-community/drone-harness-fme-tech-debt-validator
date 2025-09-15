@@ -37,6 +37,8 @@ steps:
     max_flags_in_project: 50
     flag_last_modified_threshold: "90d"
     flag_last_traffic_threshold: "30d"
+    flag_at_100_percent_last_modified_threshold: "30d"
+    flag_at_100_percent_last_traffic_threshold: "7d"
     tag_remove_these_flags: "deprecated,remove"
     tag_permanent_flags: "permanent,keep"
 ```
@@ -53,6 +55,8 @@ steps:
 | `PLUGIN_MAX_FLAGS_IN_PROJECT` | Maximum allowed flags | `-1` (disabled) | `50` |
 | `PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD` | Age threshold for stale flags | `-1` (disabled) | `90d`, `30d 12h` |
 | `PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD` | Traffic threshold for inactive flags | `-1` (disabled) | `30d`, `7d` |
+| `PLUGIN_FLAG_AT_100_PERCENT_LAST_MODIFIED_THRESHOLD` | Age threshold for 100% allocation flags | `-1` (disabled) | `30d`, `7d` |
+| `PLUGIN_FLAG_AT_100_PERCENT_LAST_TRAFFIC_THRESHOLD` | Traffic threshold for 100% allocation flags | `-1` (disabled) | `7d`, `3d` |
 | `PLUGIN_TAG_REMOVE_THESE_FLAGS` | Comma-separated tags that fail builds | `""` | `deprecated,remove` |
 | `PLUGIN_TAG_PERMANENT_FLAGS` | Comma-separated tags for permanent flags | `""` | `permanent,keep` |
 
@@ -233,8 +237,11 @@ The plugin performs the following governance checks:
 
 ### 3. **Stale Flag Detection**
 - **Last Modified Check**: Flags not updated in X days
-- **Traffic Check**: Flags not receiving traffic in X days  
-- **100% Flag Checks**: Special handling for flags at 100% allocation
+- **Traffic Check**: Flags not receiving traffic in X days
+- **100% Flag Modified Check**: Special threshold for flags at 100% allocation that haven't been modified
+- **100% Flag Traffic Check**: Special threshold for flags at 100% allocation that haven't received traffic
+- **Consolidated Reporting**: All threshold violations for a flag are reported together
+- **Actionable Error Messages**: Comprehensive guidance for resolving violations
 - Configurable thresholds via duration format
 
 ### 4. **Permanent Flag Exemptions**
@@ -308,12 +315,21 @@ The plugin is designed for production CI environments with robust error handling
 
 ### Debug Mode
 
-Set `PYTHONPATH` and run with debug logging:
+Enable detailed debug logging to troubleshoot issues:
 ```bash
-export PYTHONPATH=/app
-python -c "import logging; logging.basicConfig(level=logging.DEBUG)"
+# Enable debug mode
+export PLUGIN_DEBUG=true
+
+# Run the plugin with detailed logging
 python app/main.py
 ```
+
+Debug mode provides detailed information about:
+- Configuration values and test execution
+- Flag extraction and validation processes
+- API requests and responses
+- Threshold calculations and comparisons
+- 100% flag detection logic
 
 ## Testing
 
