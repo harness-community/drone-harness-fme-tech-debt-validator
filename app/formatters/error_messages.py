@@ -79,39 +79,99 @@ class ErrorMessageFormatter:
         threshold: str,
         last_activity: str,
         flag_type: str = "modified",
+        files_with_flag: List[str] = None,
     ) -> str:
         """Format error message for stale flags"""
+        file_locations = ""
+        if files_with_flag:
+            file_locations = f"""
+║ 📁 FOUND IN FILES:"""
+            for file_path in files_with_flag[:5]:  # Limit to first 5 files
+                file_locations += f"\n║    • {file_path}"
+            if len(files_with_flag) > 5:
+                file_locations += f"\n║    • ... and {len(files_with_flag) - 5} more files"
+
         return f"""
 ╔══════════════════════════════════════════════════════════════════════
 ║ ❌ STALE FEATURE FLAG DETECTED
 ╠══════════════════════════════════════════════════════════════════════
 ║ Flag: '{flag_name}'
 ║ Issue: Flag hasn't been {flag_type} in {threshold}
-║ Last Activity: {last_activity}
-║ 
+║ Last Activity: {last_activity}{file_locations}
+║
 ║ 🔧 REQUIRED ACTIONS:
 ║ 1. Review if this flag is still needed
 ║ 2. If needed, add 'permanent' tag to exclude from stale checks
 ║ 3. If not needed, plan removal strategy
 ║ 4. Update flag configuration if actively used
-║ 
+║
 ║ 🏷️  TO MARK AS PERMANENT:
 ║    • Add tag 'permanent' or 'keep' in Harness UI
 ║    • This will exclude it from future stale flag checks
-║ 
+║
 ║ 🗑️  TO REMOVE SAFELY:
 ║    1. Verify flag is not actively used in production
 ║    2. Check traffic metrics and user impact
 ║    3. Plan gradual removal if needed
 ║    4. Remove from code and Harness configuration
-║ 
+║
 ║ 📊 CHECK FLAG USAGE:
 ║    • Review analytics in Harness dashboard
 ║    • Check production traffic patterns
 ║    • Verify with product/engineering teams
-║ 
+║
+║ 💡 NEXT STEPS:
+║    git grep -n "{flag_name}" --exclude-dir=node_modules
+║    rg "{flag_name}" --type js --type java --type py
+║
 ║ 📖 RESOURCES:
 ║    Flag Lifecycle: https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
+╚══════════════════════════════════════════════════════════════════════"""
+
+    @staticmethod
+    def format_100_percent_flag_error(
+        flag_name: str,
+        threshold: str,
+        last_activity: str,
+        flag_type: str = "modified",
+    ) -> str:
+        """Format error message for 100% flags that are stale"""
+        return f"""
+╔══════════════════════════════════════════════════════════════════════
+║ ⚠️  100% FEATURE FLAG OPTIMIZATION OPPORTUNITY
+╠══════════════════════════════════════════════════════════════════════
+║ Flag: '{flag_name}'
+║ Status: 100% traffic allocation + stale
+║ Issue: Flag hasn't been {flag_type} in {threshold}
+║ Last Activity: {last_activity}
+║
+║ 🚀 OPTIMIZATION ACTIONS:
+║ 1. REMOVE FLAG: This flag is at 100% and can likely be removed
+║ 2. CLEAN UP CODE: Replace flag checks with direct implementation
+║ 3. SIMPLIFY LOGIC: Remove conditional branching around this flag
+║ 4. UPDATE DOCUMENTATION: Remove flag references from docs
+║
+║ 💡 WHY REMOVE 100% FLAGS:
+║    • No A/B testing value (everyone gets same treatment)
+║    • Code complexity without benefit
+║    • Performance overhead for no gain
+║    • Technical debt accumulation
+║
+║ 🔄 SAFE REMOVAL PROCESS:
+║    1. Verify 100% allocation in Harness UI
+║    2. Check traffic patterns and user impact
+║    3. Replace flag checks with direct code implementation
+║    4. Test in staging environment first
+║    5. Deploy and monitor for issues
+║    6. Remove flag definition from Harness
+║
+║ 🏷️  ALTERNATIVE - MARK AS PERMANENT:
+║    • Add tag 'permanent' if flag must stay for business reasons
+║    • Consider if there's future A/B testing planned
+║
+║ 📖 RESOURCES:
+║    Flag Lifecycle: https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
+║    Technical Debt: https://developer.harness.io/docs/feature-management-experimentation/management-and-administration/admin-best-practices/managing-technical-debt/
 ╚══════════════════════════════════════════════════════════════════════"""
 
     @staticmethod

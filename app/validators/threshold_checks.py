@@ -143,12 +143,12 @@ class ThresholdValidator:
                     if self._is_flag_at_100_percent(flag, flag_data):
                         # Format last activity time
                         last_activity = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
-                        flag_type = "modified" if attribute_name == "lastUpdateTime" else "receiving traffic"
+                        flag_type = "modified" if attribute_name == "last_update_time" else "receiving traffic"
 
                         if self.debug:
                             logger.debug(f"Flag '{flag}': 100% flag threshold violation detected (last {flag_type}: {last_activity})")
 
-                        error_msg = ErrorMessageFormatter.format_stale_flag_error(flag, threshold_value, last_activity, flag_type)
+                        error_msg = ErrorMessageFormatter.format_100_percent_flag_error(flag, threshold_value, last_activity, flag_type)
                         logger.error(error_msg)
                         return False
                     elif self.debug:
