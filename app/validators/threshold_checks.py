@@ -66,6 +66,8 @@ class ThresholdValidator:
         if self.debug:
             logger.debug(f"Threshold parsed: {threshold_value} = {threshold_seconds} seconds = timestamp {threshold_timestamp}")
 
+        failed_flags = []
+
         for flag in flags_in_code:
             if self.debug:
                 logger.debug(f"Checking flag '{flag}' against threshold")
@@ -136,9 +138,15 @@ class ThresholdValidator:
                     if self.debug:
                         logger.debug(f"Flag '{flag}': threshold violation detected (last {flag_type}: {last_activity})")
 
-                    error_msg = ErrorMessageFormatter.format_stale_flag_error(flag, threshold_value, last_activity, flag_type)
-                    logger.error(error_msg)
-                    return False
+                    # Add to failed flags list instead of returning immediately
+                    failed_flags.append({
+                        "flag": flag,
+                        "threshold_value": threshold_value,
+                        "last_activity": last_activity,
+                        "flag_type": flag_type,
+                        "is_100_percent": False
+                    })
+
                 elif isinstance(timestamp, int) and timestamp < threshold_timestamp and check_100_percent:
                     if self._is_flag_at_100_percent(flag, flag_data):
                         # Format last activity time
@@ -148,11 +156,47 @@ class ThresholdValidator:
                         if self.debug:
                             logger.debug(f"Flag '{flag}': 100% flag threshold violation detected (last {flag_type}: {last_activity})")
 
-                        error_msg = ErrorMessageFormatter.format_100_percent_flag_error(flag, threshold_value, last_activity, flag_type)
-                        logger.error(error_msg)
-                        return False
+                        # Add to failed flags list instead of returning immediately
+                        failed_flags.append({
+                            "flag": flag,
+                            "threshold_value": threshold_value,
+                            "last_activity": last_activity,
+                            "flag_type": flag_type,
+                            "is_100_percent": True
+                        })
+
                     elif self.debug:
                         logger.debug(f"Flag '{flag}': not at 100%, skipping 100% threshold check")
+
+        # Report all failures after checking all flags
+        if failed_flags:
+            # Log summary first
+            logger.error(f"\n📊 THRESHOLD CHECK SUMMARY: Found {len(failed_flags)} stale flag(s)")
+
+            for failure in failed_flags:
+                if failure["is_100_percent"]:
+                    error_msg = ErrorMessageFormatter.format_100_percent_flag_error(
+                        failure["flag"], failure["threshold_value"], failure["last_activity"], failure["flag_type"]
+                    )
+                else:
+                    error_msg = ErrorMessageFormatter.format_stale_flag_error(
+                        failure["flag"], failure["threshold_value"], failure["last_activity"], failure["flag_type"]
+                    )
+                logger.error(error_msg)
+
+            # Log final summary
+            regular_flags = [f["flag"] for f in failed_flags if not f["is_100_percent"]]
+            hundred_percent_flags = [f["flag"] for f in failed_flags if f["is_100_percent"]]
+
+            summary_parts = []
+            if regular_flags:
+                summary_parts.append(f"{len(regular_flags)} stale flag(s): {', '.join(regular_flags)}")
+            if hundred_percent_flags:
+                summary_parts.append(f"{len(hundred_percent_flags)} 100% flag(s): {', '.join(hundred_percent_flags)}")
+
+            logger.error(f"⚠️  TOTAL ISSUES: {' | '.join(summary_parts)}")
+
+            return False
 
         return True
 
