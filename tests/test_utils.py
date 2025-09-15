@@ -25,11 +25,11 @@ def create_mock_flag_detail(name: str, **kwargs) -> Mock:
     """Create a mock flag detail object."""
     flag_detail = Mock()
     flag_detail.name = name
-    flag_detail.lastUpdateTime = kwargs.get("lastUpdateTime", 1640995200)
-    flag_detail.lastTrafficReceivedAt = kwargs.get("lastTrafficReceivedAt", 1640995200)
+    flag_detail.last_update_time = kwargs.get("lastUpdateTime", 1640995200)
+    flag_detail.last_traffic_received_at = kwargs.get("lastTrafficReceivedAt", 1640995200)
     flag_detail._traffic_allocation = kwargs.get("traffic_allocation", 50)
     flag_detail._rules = kwargs.get("rules", [])
-    flag_detail._default_rule = kwargs.get("default_rule", Mock())
+    flag_detail._default_rule = kwargs.get("default_rule", [])
     return flag_detail
 
 

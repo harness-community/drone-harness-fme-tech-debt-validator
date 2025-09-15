@@ -73,28 +73,11 @@ class ThresholdValidator:
                 logger.debug(f"Checking flag '{flag}' against threshold")
 
             # Skip permanent flags - fast dictionary lookup with safe access
-            meta_flag = meta_flag_data.get(flag)
-            if meta_flag:
-                tags = getattr(meta_flag, "_tags", None)
-                if tags:
-                    try:
-                        permanent_tag_names = [tag.strip().lower() for tag in self.permanent_flags_tag.split(",") if tag.strip()]
-                        is_permanent = False
-
-                        for tag in tags:
-                            tag_name = getattr(tag, "name", None)
-                            if tag_name and tag_name.lower() in permanent_tag_names:
-                                is_permanent = True
-                                break
-
-                        if is_permanent:
-                            if self.debug:
-                                logger.debug(f"Flag '{flag}' has permanent tag, skipping threshold check")
-                            logger.info(f"Feature flag {flag} has a permanent tag")
-                            continue
-                    except Exception as e:
-                        logger.debug(f"Error checking permanent tags for flag {flag}: {e}")
-                        # Continue with threshold check if tag checking fails
+            if self._is_permanent_flag(flag, meta_flag_data):
+                if self.debug:
+                    logger.debug(f"Flag '{flag}' has permanent tag, skipping threshold check")
+                logger.info(f"Feature flag {flag} has a permanent tag")
+                continue
 
             # Find flag detail with safe name access
             flag_detail = None
@@ -271,18 +254,8 @@ class ThresholdValidator:
 
         for flag in flags_in_code:
             # Skip permanent flags
-            meta_flag = meta_flag_data.get(flag)
-            if meta_flag:
-                tags = getattr(meta_flag, "_tags", None)
-                if tags:
-                    try:
-                        permanent_tag_names = [tag.strip().lower() for tag in self.permanent_flags_tag.split(",") if tag.strip()]
-                        for tag in tags:
-                            tag_name = getattr(tag, "name", None)
-                            if tag_name and tag_name.lower() in permanent_tag_names:
-                                continue  # Skip this flag entirely
-                    except Exception:
-                        pass
+            if self._is_permanent_flag(flag, meta_flag_data):
+                continue  # Skip this flag entirely
 
             # Find flag detail
             flag_detail = None
@@ -372,6 +345,34 @@ class ThresholdValidator:
             summary_parts.append(f"{len(hundred_percent_flags)} at 100%: {', '.join(hundred_percent_flags)}")
 
         logger.error(f"⚠️  SUMMARY: {' | '.join(summary_parts)}")
+
+    def _is_permanent_flag(self, flag: str, meta_flag_data: Dict) -> bool:
+        """Check if flag is marked as permanent."""
+        if not self.permanent_flags_tag:
+            return False
+
+        meta_flag = meta_flag_data.get(flag)
+        if not meta_flag:
+            return False
+
+        tags = getattr(meta_flag, "_tags", None)
+        if not tags:
+            return False
+
+        permanent_tag_names = [tag.strip().lower() for tag in self.permanent_flags_tag.split(",") if tag.strip()]
+        if not permanent_tag_names:
+            return False
+
+        try:
+            for tag in tags:
+                tag_name = getattr(tag, "name", None)
+                if tag_name and tag_name.lower() in permanent_tag_names:
+                    return True
+        except Exception as e:
+            if self.debug:
+                logger.debug(f"Error checking permanent tags for flag {flag}: {e}")
+
+        return False
 
     def _is_flag_at_100_percent(self, flag: str, flag_data: List) -> bool:
         """Check if a flag is at 100% traffic allocation"""
