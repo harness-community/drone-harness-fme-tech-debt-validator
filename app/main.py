@@ -57,7 +57,7 @@ class CITestRunner:
             "harness_project": os.getenv("HARNESS_PROJECT_ID", "none"),
             "production_environment_name": os.getenv("PLUGIN_PRODUCTION_ENVIRONMENT_NAME", "Production"),
             "permanent_flags_tag": os.getenv("PLUGIN_TAG_PERMANENT_FLAGS", ""),
-            "tag_remove_these_flags": os.getenv("PLUGIN_TAG_REMOVE_THESE_FLAGS", ""),
+            "remove_these_flags_tag": os.getenv("PLUGIN_TAG_REMOVE_THESE_FLAGS", ""),
             "max_flags_in_project": os.getenv("PLUGIN_MAX_FLAGS_IN_PROJECT", "-1"),
             "flag_last_modified_threshold": os.getenv("PLUGIN_FLAG_LAST_MODIFIED_THRESHOLD", "-1"),
             "flag_last_traffic_threshold": os.getenv("PLUGIN_FLAG_LAST_TRAFFIC_THRESHOLD", "-1"),
@@ -93,7 +93,7 @@ class CITestRunner:
                 missing_required.append(var_name)
 
         # List optional variables for user information
-        if self.config["tag_remove_these_flags"] == "":
+        if self.config["remove_these_flags_tag"] == "":
             optional_vars.append("PLUGIN_TAG_REMOVE_THESE_FLAGS (for tag-based flag removal)")
 
         if self.config["permanent_flags_tag"] == "":
@@ -184,7 +184,7 @@ class CITestRunner:
 
         if debug_enabled:
             logger.debug("=== Test Configuration Summary ===")
-            logger.debug(f"Flag removal tags: '{self.config.get('tag_remove_these_flags', 'NOT SET')}'")
+            logger.debug(f"Flag removal tags: '{self.config.get('remove_these_flags_tag', 'NOT SET')}'")
             logger.debug(f"Permanent flags tags: '{self.config.get('permanent_flags_tag', 'NOT SET')}'")
             logger.debug(f"Max flags in project: '{self.config.get('max_flags_in_project', 'NOT SET')}'")
             logger.debug(f"Flag last modified threshold: '{self.config.get('flag_last_modified_threshold', 'NOT SET')}'")

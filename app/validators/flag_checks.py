@@ -12,7 +12,7 @@ class FlagValidator:
     """Handles feature flag governance validation checks."""
 
     def __init__(self, config: Dict[str, str]):
-        self.remove_these_flags_tag = config.get("tag_remove_these_flags", "")
+        self.remove_these_flags_tag = config.get("remove_these_flags_tag", "")
         self.max_flags_in_project = config.get("max_flags_in_project", "-1")
         self.debug = config.get("debug", False)
 
