@@ -125,6 +125,11 @@ class ThresholdValidator:
                 logger.debug(f"Flag '{flag}': detail found = {flag_detail is not None}")
 
             if flag_detail:
+                # Debug: Show all attributes of the flag detail object
+                if self.debug:
+                    logger.debug(f"Flag '{flag}': Available attributes: {[attr for attr in dir(flag_detail) if not attr.startswith('_')]}")
+                    logger.debug(f"Flag '{flag}': Looking for attribute '{attribute_name}'")
+
                 # Get the timestamp attribute dynamically
                 timestamp = getattr(flag_detail, attribute_name, None)
                 if self.debug:
@@ -135,6 +140,14 @@ class ThresholdValidator:
                     logger.debug(f"Flag '{flag}': {attribute_name} = {timestamp} ({timestamp_readable})")
                     logger.debug(f"Flag '{flag}': threshold = {threshold_timestamp} ({threshold_readable})")
                     logger.debug(f"Flag '{flag}': is_stale = {isinstance(timestamp, int) and timestamp < threshold_timestamp}")
+
+                    # Additional debug: try alternative attribute names
+                    if timestamp is None:
+                        alt_names = ['last_traffic_received_at', '_lastTrafficReceivedAt', 'lastTrafficReceived', 'traffic_received_at']
+                        for alt_name in alt_names:
+                            alt_value = getattr(flag_detail, alt_name, 'NOT_FOUND')
+                            if alt_value != 'NOT_FOUND':
+                                logger.debug(f"Flag '{flag}': Found alternative attribute '{alt_name}' = {alt_value}")
 
                 if isinstance(timestamp, int) and timestamp < threshold_timestamp and not check_100_percent:
                     # Format last activity time
