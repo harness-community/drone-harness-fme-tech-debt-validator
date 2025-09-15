@@ -24,18 +24,17 @@ class ThresholdValidator:
         if self.debug:
             logger.debug("=== ThresholdValidator Configuration ===")
             logger.debug(f"Permanent flags tag: '{self.permanent_flags_tag}'")
-            logger.debug(
-                f"Flag last modified threshold: '{self.flag_last_modified_threshold}' {'(DISABLED)' if self.flag_last_modified_threshold == '-1' else '(ENABLED)'}"
-            )
-            logger.debug(
-                f"Flag last traffic threshold: '{self.flag_last_traffic_threshold}' {'(DISABLED)' if self.flag_last_traffic_threshold == '-1' else '(ENABLED)'}"
-            )
-            logger.debug(
-                f"100% flag last modified threshold: '{self.flag_at_100_percent_last_modified_threshold}' {'(DISABLED)' if self.flag_at_100_percent_last_modified_threshold == '-1' else '(ENABLED)'}"
-            )
-            logger.debug(
-                f"100% flag last traffic threshold: '{self.flag_at_100_percent_last_traffic_threshold}' {'(DISABLED)' if self.flag_at_100_percent_last_traffic_threshold == '-1' else '(ENABLED)'}"
-            )
+            status = "(DISABLED)" if self.flag_last_modified_threshold == "-1" else "(ENABLED)"
+            logger.debug(f"Flag last modified threshold: '{self.flag_last_modified_threshold}' {status}")
+
+            status = "(DISABLED)" if self.flag_last_traffic_threshold == "-1" else "(ENABLED)"
+            logger.debug(f"Flag last traffic threshold: '{self.flag_last_traffic_threshold}' {status}")
+
+            status = "(DISABLED)" if self.flag_at_100_percent_last_modified_threshold == "-1" else "(ENABLED)"
+            logger.debug(f"100% flag last modified threshold: '{self.flag_at_100_percent_last_modified_threshold}' {status}")
+
+            status = "(DISABLED)" if self.flag_at_100_percent_last_traffic_threshold == "-1" else "(ENABLED)"
+            logger.debug(f"100% flag last traffic threshold: '{self.flag_at_100_percent_last_traffic_threshold}' {status}")
             logger.debug("=========================================")
 
     def _check_flag_threshold(
