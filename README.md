@@ -1,10 +1,10 @@
-# Feature Flag CI Plugin
+# Feature Flag FME Tech Debt CI Plugin
 
-A Drone CI plugin that analyzes code changes for feature flag usage and enforces governance policies to prevent problematic feature flags from being deployed.
+A Harness CI plugin that analyzes code changes for feature flag usage and enforces governance policies to prevent problematic feature flags from being deployed.
 
 ## Overview
 
-This plugin performs static analysis on git diffs to detect feature flag usage in your code and validates them against your Harness Feature Flags configuration. It helps enforce feature flag governance by failing CI builds when certain conditions are met.
+This plugin performs static analysis on git diffs to detect feature flag usage in your code and validates them against your Harness Feature Management and Experimentation configuration. It helps enforce feature flag governance by failing CI builds when certain conditions are met.
 
 ## Features
 
