@@ -37,7 +37,20 @@ pipeline:
                       python3 -m venv .venv
                       . .venv/bin/activate
                       python3 -m pip install -r requirements.txt
+                      python3 -m pip install -r requirements-test.txt
                   timeout: ""
+                  type: Run
+              - step:
+                  identifier: runtests
+                  name: run tests
+                  spec:
+                    shell: Sh
+                    command: |-
+                      . .venv/bin/activate
+                      export PYTHONPATH=app
+                      python -m pytest tests/ -v --cov=app --cov-report=term
+                      echo "✅ All tests passed!"
+                  timeout: 10m
                   type: Run
               - step:
                   identifier: dockerbuild

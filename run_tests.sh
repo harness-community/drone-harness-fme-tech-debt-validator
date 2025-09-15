@@ -21,30 +21,17 @@ source .venv/bin/activate
 echo "📋 Installing test dependencies..."
 pip install -r requirements-test.txt
 
-# Run different test categories
+# Set Python path for app imports
+export PYTHONPATH=app
+
+# Run all tests with coverage
 echo ""
-echo "🔍 Running Unit Tests..."
-pytest tests/ -m "unit" -v
+echo "🧪 Running All Tests with Coverage..."
+pytest tests/ -v --cov=app --cov-report=html --cov-report=term
 
 echo ""
-echo "🔗 Running Integration Tests..."
-pytest tests/ -m "integration" -v
-
-echo ""
-echo "🌳 Running AST Parsing Tests..."
-pytest tests/ -m "ast" -v
-
-echo ""
-echo "📊 Running All Tests with Coverage..."
-pytest tests/ --cov=app --cov-report=html --cov-report=term
-
-echo ""
-echo "🐌 Running Slow Tests..."
-pytest tests/ -m "slow" -v
-
-echo ""
-echo "🏃‍♂️ Running Fast Tests in Parallel..."
-pytest tests/ -m "not slow" -n auto
+echo "🔍 Running linter..."
+flake8 . --max-line-length=150 --extend-ignore=W293,W291,E203
 
 echo ""
 echo "✅ All tests completed!"
