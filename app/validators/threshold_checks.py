@@ -337,9 +337,19 @@ class ThresholdValidator:
 ║ 🚨 FAILED CHECKS:
 {chr(10).join(issue_lines)}
 ║
-║ 🔧 RECOMMENDED ACTION:
-║ {'   • REMOVE FLAG: At 100% allocation - can be safely removed' if is_100_percent else '   • REVIEW FLAG: Add permanent tag if needed, or plan removal'}
-║ {'   • CLEAN UP CODE: Replace flag checks with direct implementation' if is_100_percent else '   • UPDATE CONFIG: Modify flag settings if actively used'}
+║ 🔧 RECOMMENDED ACTION:"""
+
+            # Add action recommendations based on flag type
+            if is_100_percent:
+                consolidated_msg += """
+║    • REMOVE FLAG: At 100% allocation - can be safely removed
+║    • CLEAN UP CODE: Replace flag checks with direct implementation"""
+            else:
+                consolidated_msg += """
+║    • REVIEW FLAG: Add permanent tag if needed, or plan removal
+║    • UPDATE CONFIG: Modify flag settings if actively used"""
+
+            consolidated_msg += f"""
 ║
 ║ 💡 SEARCH COMMANDS:
 ║    git grep -n "{flag_name}" --exclude-dir=node_modules
