@@ -16,6 +16,12 @@ class FlagValidator:
         self.max_flags_in_project = config.get("max_flags_in_project", "-1")
         self.debug = config.get("debug", False)
 
+        if self.debug:
+            logger.debug("=== FlagValidator Configuration ===")
+            logger.debug(f"Remove these flags tags: '{self.remove_these_flags_tag}' {'(DISABLED)' if not self.remove_these_flags_tag else '(ENABLED)'}")
+            logger.debug(f"Max flags in project: '{self.max_flags_in_project}' {'(DISABLED)' if self.max_flags_in_project == '-1' else '(ENABLED)'}")
+            logger.debug("====================================")
+
     def check_removal_tags(self, flags_in_code: List[str], meta_flag_data: Dict, flag_file_mapping: Dict[str, List[str]]) -> bool:
         """Check if any flags in code have removal tags."""
         if self.debug:

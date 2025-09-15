@@ -182,6 +182,17 @@ class CITestRunner:
         filtered_flags = self._filter_valid_flags(self.flags_in_code)
         logger.info(f"  Validated Feature Flags: {filtered_flags}")
 
+        if debug_enabled:
+            logger.debug("=== Test Configuration Summary ===")
+            logger.debug(f"Flag removal tags: '{self.config.get('tag_remove_these_flags', 'NOT SET')}'")
+            logger.debug(f"Permanent flags tags: '{self.config.get('permanent_flags_tag', 'NOT SET')}'")
+            logger.debug(f"Max flags in project: '{self.config.get('max_flags_in_project', 'NOT SET')}'")
+            logger.debug(f"Flag last modified threshold: '{self.config.get('flag_last_modified_threshold', 'NOT SET')}'")
+            logger.debug(f"Flag last traffic threshold: '{self.config.get('flag_last_traffic_threshold', 'NOT SET')}'")
+            logger.debug(f"100% flag modified threshold: '{self.config.get('flag_at_100_percent_last_modified_threshold', 'NOT SET')}'")
+            logger.debug(f"100% flag traffic threshold: '{self.config.get('flag_at_100_percent_last_traffic_threshold', 'NOT SET')}'")
+            logger.debug("===================================")
+
         test_results = []
         all_tests_passed = True
 
@@ -224,7 +235,15 @@ class CITestRunner:
         ]
 
         # Run all tests
+        if debug_enabled:
+            logger.debug(f"=== Running {len(tests)} Tests ===")
+            for i, (_, test_name) in enumerate(tests, 1):
+                logger.debug(f"{i}. {test_name}")
+            logger.debug("===============================")
+
         for test_method, test_name in tests:
+            if debug_enabled:
+                logger.debug(f"Starting test: {test_name}")
             if not self._run_test(test_method, test_name, test_results):
                 all_tests_passed = False
 
