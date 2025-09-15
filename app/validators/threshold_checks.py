@@ -76,34 +76,14 @@ class ThresholdValidator:
                 tags = getattr(meta_flag, "_tags", None)
                 if tags:
                     try:
+                        permanent_tag_names = [tag.strip().lower() for tag in self.permanent_flags_tag.split(",") if tag.strip()]
                         is_permanent = False
-                        if hasattr(tags, "map") and hasattr(tags, "any"):
-                            # Use built-in methods if available
-                            def get_tag_name(tag):
-                                return (
-                                    getattr(tag, "name", None)
-                                    or getattr(tag, "tag", None)
-                                    or getattr(tag, "label", None)
-                                    or getattr(tag, "value", None)
-                                    or str(tag)
-                                    or ""
-                                ).lower()
 
-                            is_permanent = tags.map(get_tag_name).any(lambda tag: tag in self.permanent_flags_tag.lower().split(","))
-                        else:
-                            # Fallback for list-like tags
-                            for tag in tags:
-                                # Try different possible attribute names
-                                tag_name = (
-                                    getattr(tag, "name", None)
-                                    or getattr(tag, "tag", None)
-                                    or getattr(tag, "label", None)
-                                    or getattr(tag, "value", None)
-                                    or str(tag)
-                                )
-                                if tag_name and tag_name.lower() in self.permanent_flags_tag.lower().split(","):
-                                    is_permanent = True
-                                    break
+                        for tag in tags:
+                            tag_name = getattr(tag, "name", None)
+                            if tag_name and tag_name.lower() in permanent_tag_names:
+                                is_permanent = True
+                                break
 
                         if is_permanent:
                             if self.debug:
@@ -125,11 +105,6 @@ class ThresholdValidator:
                 logger.debug(f"Flag '{flag}': detail found = {flag_detail is not None}")
 
             if flag_detail:
-                # Debug: Show all attributes of the flag detail object
-                if self.debug:
-                    logger.debug(f"Flag '{flag}': Available attributes: {[attr for attr in dir(flag_detail) if not attr.startswith('_')]}")
-                    logger.debug(f"Flag '{flag}': Looking for attribute '{attribute_name}'")
-
                 # Get the timestamp attribute dynamically
                 timestamp = getattr(flag_detail, attribute_name, None)
                 if self.debug:
@@ -140,14 +115,6 @@ class ThresholdValidator:
                     logger.debug(f"Flag '{flag}': {attribute_name} = {timestamp} ({timestamp_readable})")
                     logger.debug(f"Flag '{flag}': threshold = {threshold_timestamp} ({threshold_readable})")
                     logger.debug(f"Flag '{flag}': is_stale = {isinstance(timestamp, int) and timestamp < threshold_timestamp}")
-
-                    # Additional debug: try alternative attribute names
-                    if timestamp is None:
-                        alt_names = ['last_traffic_received_at', '_lastTrafficReceivedAt', 'lastTrafficReceived', 'traffic_received_at']
-                        for alt_name in alt_names:
-                            alt_value = getattr(flag_detail, alt_name, 'NOT_FOUND')
-                            if alt_value != 'NOT_FOUND':
-                                logger.debug(f"Flag '{flag}': Found alternative attribute '{alt_name}' = {alt_value}")
 
                 if isinstance(timestamp, int) and timestamp < threshold_timestamp and not check_100_percent:
                     # Format last activity time
