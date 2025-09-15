@@ -30,7 +30,7 @@ def extract_flags_ast_csharp(content: str) -> List[str]:
 
 def _extract_flags_csharp_lexical(content: str) -> List[str]:
     """Extract feature flags from C# using pygments lexical parsing"""
-    csharp_lexer = get_lexer_by_name('csharp')
+    csharp_lexer = get_lexer_by_name("csharp")
     tokens = list(csharp_lexer.get_tokens(content))
 
     variables = {}
@@ -47,7 +47,7 @@ def _extract_flags_csharp_lexical(content: str) -> List[str]:
             var_name = None
 
             # Skip whitespace to find variable name
-            while j < len(tokens) and tokens[j][1].strip() == '':
+            while j < len(tokens) and tokens[j][1].strip() == "":
                 j += 1
 
             if j < len(tokens) and tokens[j][0] in [Token.Name, Token.Name.Variable]:
@@ -55,24 +55,24 @@ def _extract_flags_csharp_lexical(content: str) -> List[str]:
                 j += 1
 
                 # Look for assignment operator
-                while j < len(tokens) and tokens[j][1].strip() in ['', '=']:
+                while j < len(tokens) and tokens[j][1].strip() in ["", "="]:
                     j += 1
 
                 # Look for string literal value
                 if j < len(tokens) and tokens[j][0] == Token.Literal.String:
-                    var_value = tokens[j][1].strip('"\'')
+                    var_value = tokens[j][1].strip("\"'")
                     if var_name and var_value:
                         variables[var_name] = var_value
 
         # Method calls: look for GetTreatment methods
-        elif (token_type in [Token.Name, Token.Name.Function] and "GetTreatment" in value):
+        elif token_type in [Token.Name, Token.Name.Function] and "GetTreatment" in value:
             # Found a GetTreatment method, now look for the opening parenthesis
             j = i + 1
-            while j < len(tokens) and tokens[j][1].strip() in ['', '.']:
+            while j < len(tokens) and tokens[j][1].strip() in ["", "."]:
                 j += 1
 
             # Should find opening parenthesis
-            if j < len(tokens) and tokens[j][1] == '(':
+            if j < len(tokens) and tokens[j][1] == "(":
                 # Extract all string literals until closing parenthesis
                 paren_count = 1
                 j += 1
@@ -80,13 +80,13 @@ def _extract_flags_csharp_lexical(content: str) -> List[str]:
                 while j < len(tokens) and paren_count > 0:
                     t_type, t_value = tokens[j]
 
-                    if t_value == '(':
+                    if t_value == "(":
                         paren_count += 1
-                    elif t_value == ')':
+                    elif t_value == ")":
                         paren_count -= 1
                     elif t_type == Token.Literal.String:
                         # Remove quotes from string literal
-                        clean_string = t_value.strip('"\'')
+                        clean_string = t_value.strip("\"'")
                         if clean_string:
                             flags.append(clean_string)
                     elif t_type in [Token.Name, Token.Name.Variable] and t_value in variables:
@@ -113,7 +113,7 @@ def _extract_flags_csharp_regex_fallback(content: str) -> List[str]:
 
     # GetTreatment calls with string literals - extract all string arguments (including plural forms)
     # Find all GetTreatment method calls first, then extract all string literals from each
-    method_pattern = r'(?:^|[^a-zA-Z])GetTreatments?(?:WithConfig)?(?:Async)?\s*\([^)]+\)'
+    method_pattern = r"(?:^|[^a-zA-Z])GetTreatments?(?:WithConfig)?(?:Async)?\s*\([^)]+\)"
     for method_match in re.finditer(method_pattern, content):
         method_call = method_match.group(0)
         # Extract all string literals from this specific method call

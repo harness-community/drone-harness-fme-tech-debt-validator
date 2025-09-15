@@ -18,7 +18,9 @@ class FlagValidator:
 
         if self.debug:
             logger.debug("=== FlagValidator Configuration ===")
-            logger.debug(f"Remove these flags tags: '{self.remove_these_flags_tag}' {'(DISABLED)' if not self.remove_these_flags_tag else '(ENABLED)'}")
+            logger.debug(
+                f"Remove these flags tags: '{self.remove_these_flags_tag}' {'(DISABLED)' if not self.remove_these_flags_tag else '(ENABLED)'}"
+            )
             logger.debug(f"Max flags in project: '{self.max_flags_in_project}' {'(DISABLED)' if self.max_flags_in_project == '-1' else '(ENABLED)'}")
             logger.debug("====================================")
 

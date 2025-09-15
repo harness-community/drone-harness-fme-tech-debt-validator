@@ -133,13 +133,13 @@ class CITestRunner:
         known_flag_names = set()
 
         # Add flags from meta flag data (if available)
-        if hasattr(self.harness_client, 'meta_flag_data') and self.harness_client.meta_flag_data:
+        if hasattr(self.harness_client, "meta_flag_data") and self.harness_client.meta_flag_data:
             known_flag_names.update(self.harness_client.meta_flag_data.keys())
 
         # Add flags from flag data (if available) - flag_data is a list of objects
-        if hasattr(self.harness_client, 'flag_data') and self.harness_client.flag_data:
+        if hasattr(self.harness_client, "flag_data") and self.harness_client.flag_data:
             for flag_obj in self.harness_client.flag_data:
-                flag_name = getattr(flag_obj, 'name', None)
+                flag_name = getattr(flag_obj, "name", None)
                 if flag_name:
                     known_flag_names.add(flag_name)
 
