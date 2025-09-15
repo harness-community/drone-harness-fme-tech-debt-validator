@@ -204,6 +204,168 @@ class ThresholdValidator:
 
         return True
 
+    def check_all_thresholds_consolidated(self, flags_in_code: List[str], meta_flag_data: Dict, flag_data: List) -> bool:
+        """Comprehensive threshold check that combines all threshold types and reports consolidated results"""
+        if self.debug:
+            logger.debug("Starting consolidated threshold check for all flag types")
+
+        all_failed_flags = {}  # flag_name -> {issues: [], details: {}}
+
+        # Check each threshold type and collect all failures
+        threshold_checks = [
+            ("Modified Threshold", self.flag_last_modified_threshold, "last_update_time", False),
+            ("Traffic Threshold", self.flag_last_traffic_threshold, "last_traffic_received_at", False),
+            ("100% Modified Threshold", self.flag_at_100_percent_last_modified_threshold, "last_update_time", True),
+            ("100% Traffic Threshold", self.flag_at_100_percent_last_traffic_threshold, "last_traffic_received_at", True),
+        ]
+
+        for check_name, threshold_value, attribute_name, check_100_percent in threshold_checks:
+            if threshold_value == "-1":
+                if self.debug:
+                    logger.debug(f"Skipping {check_name} (not configured)")
+                continue
+
+            if self.debug:
+                logger.debug(f"Running {check_name} with threshold {threshold_value}")
+
+            # Run threshold check and collect failures
+            failed_flags = self._run_single_threshold_check(flags_in_code, meta_flag_data, flag_data, threshold_value, attribute_name, check_100_percent)
+
+            # Consolidate failures by flag name
+            for failure in failed_flags:
+                flag_name = failure["flag"]
+                if flag_name not in all_failed_flags:
+                    all_failed_flags[flag_name] = {
+                        "issues": [],
+                        "is_100_percent": failure["is_100_percent"],
+                        "flag": flag_name
+                    }
+
+                all_failed_flags[flag_name]["issues"].append({
+                    "check_name": check_name,
+                    "threshold": threshold_value,
+                    "last_activity": failure["last_activity"],
+                    "flag_type": failure["flag_type"]
+                })
+
+        # Generate consolidated reports
+        if all_failed_flags:
+            self._report_consolidated_failures(all_failed_flags)
+            return False
+
+        return True
+
+    def _run_single_threshold_check(self, flags_in_code: List[str], meta_flag_data: Dict, flag_data: List, threshold_value: str, attribute_name: str, check_100_percent: bool) -> List[Dict]:
+        """Run a single threshold check and return failures without logging errors"""
+        from pytimeparse import parse as parse_duration
+        import time
+
+        threshold_seconds = parse_duration(threshold_value)
+        if threshold_seconds is None:
+            return []
+
+        threshold_timestamp = time.time() - threshold_seconds
+        failed_flags = []
+
+        for flag in flags_in_code:
+            # Skip permanent flags
+            meta_flag = meta_flag_data.get(flag)
+            if meta_flag:
+                tags = getattr(meta_flag, "_tags", None)
+                if tags:
+                    try:
+                        permanent_tag_names = [tag.strip().lower() for tag in self.permanent_flags_tag.split(",") if tag.strip()]
+                        for tag in tags:
+                            tag_name = getattr(tag, "name", None)
+                            if tag_name and tag_name.lower() in permanent_tag_names:
+                                continue  # Skip this flag entirely
+                    except Exception:
+                        pass
+
+            # Find flag detail
+            flag_detail = None
+            for detail in flag_data:
+                if getattr(detail, "name", None) == flag:
+                    flag_detail = detail
+                    break
+
+            if flag_detail:
+                timestamp = getattr(flag_detail, attribute_name, None)
+
+                # Convert milliseconds to seconds if needed
+                if isinstance(timestamp, int) and timestamp > 1e10:
+                    timestamp = timestamp // 1000
+
+                if isinstance(timestamp, int) and timestamp < threshold_timestamp:
+                    # For 100% checks, verify the flag is actually at 100%
+                    if check_100_percent and not self._is_flag_at_100_percent(flag, flag_data):
+                        continue
+
+                    last_activity = datetime.datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+                    flag_type = "modified" if attribute_name == "last_update_time" else "receiving traffic"
+
+                    failed_flags.append({
+                        "flag": flag,
+                        "last_activity": last_activity,
+                        "flag_type": flag_type,
+                        "is_100_percent": check_100_percent
+                    })
+
+        return failed_flags
+
+    def _report_consolidated_failures(self, all_failed_flags: Dict):
+        """Generate consolidated reports for all threshold failures"""
+        logger.error(f"\n📊 CONSOLIDATED THRESHOLD REPORT: {len(all_failed_flags)} flag(s) with violations")
+
+        for flag_name, flag_info in all_failed_flags.items():
+            issues = flag_info["issues"]
+            is_100_percent = flag_info["is_100_percent"]
+
+            # Build issue summary
+            issue_lines = []
+            for issue in issues:
+                issue_lines.append(f"║   • {issue['check_name']}: {issue['threshold']} (last {issue['flag_type']}: {issue['last_activity']})")
+
+            status = "100% allocation + stale" if is_100_percent else "Stale flag"
+            icon = "⚠️" if is_100_percent else "❌"
+
+            consolidated_msg = f"""
+╔══════════════════════════════════════════════════════════════════════
+║ {icon} CONSOLIDATED THRESHOLD VIOLATIONS
+╠══════════════════════════════════════════════════════════════════════
+║ Flag: '{flag_name}'
+║ Status: {status}
+║ Violations: {len(issues)} threshold(s) failed
+║
+║ 🚨 FAILED CHECKS:
+{chr(10).join(issue_lines)}
+║
+║ 🔧 RECOMMENDED ACTION:
+║ {'   • REMOVE FLAG: At 100% allocation - can be safely removed' if is_100_percent else '   • REVIEW FLAG: Add permanent tag if needed, or plan removal'}
+║ {'   • CLEAN UP CODE: Replace flag checks with direct implementation' if is_100_percent else '   • UPDATE CONFIG: Modify flag settings if actively used'}
+║
+║ 💡 SEARCH COMMANDS:
+║    git grep -n "{flag_name}" --exclude-dir=node_modules
+║    rg "{flag_name}" --type js --type java --type py
+║
+║ 📖 RESOURCES:
+║    Flag Lifecycle: https://developer.harness.io/docs/feature-management-experimentation/getting-started/overview/manage-the-feature-flag-lifecycle/
+╚══════════════════════════════════════════════════════════════════════"""
+
+            logger.error(consolidated_msg)
+
+        # Final summary
+        regular_flags = [name for name, info in all_failed_flags.items() if not info["is_100_percent"]]
+        hundred_percent_flags = [name for name, info in all_failed_flags.items() if info["is_100_percent"]]
+
+        summary_parts = []
+        if regular_flags:
+            summary_parts.append(f"{len(regular_flags)} stale: {', '.join(regular_flags)}")
+        if hundred_percent_flags:
+            summary_parts.append(f"{len(hundred_percent_flags)} at 100%: {', '.join(hundred_percent_flags)}")
+
+        logger.error(f"⚠️  SUMMARY: {' | '.join(summary_parts)}")
+
     def _is_flag_at_100_percent(self, flag: str, flag_data: List) -> bool:
         """Check if a flag is at 100% traffic allocation"""
         if self.debug:

@@ -209,28 +209,10 @@ class CITestRunner:
                 "Feature Flag count check",
             ),
             (
-                lambda: self.threshold_validator.check_last_modified_threshold(
+                lambda: self.threshold_validator.check_all_thresholds_consolidated(
                     filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
-                "Feature Flag last modified threshold check",
-            ),
-            (
-                lambda: self.threshold_validator.check_last_traffic_threshold(
-                    filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
-                ),
-                "Feature Flag last traffic threshold check",
-            ),
-            (
-                lambda: self.threshold_validator.check_last_modified_threshold_100_percent(
-                    filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
-                ),
-                "Feature Flag last modified threshold check for 100 percent flags",
-            ),
-            (
-                lambda: self.threshold_validator.check_last_traffic_threshold_100_percent(
-                    filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
-                ),
-                "Feature Flag last traffic threshold check for 100 percent flags",
+                "Feature Flag comprehensive threshold check",
             ),
         ]
 
