@@ -121,6 +121,35 @@ class CITestRunner:
 
         return True
 
+    def _filter_valid_flags(self, flags_in_code: List[str]) -> List[str]:
+        """Filter flags_in_code to only include actual flags that exist in Harness.
+
+        This removes non-flag arguments like user IDs that are also extracted
+        from flag evaluation method calls.
+        """
+        valid_flags = []
+
+        # Get all known flag names from both meta data and flag data
+        known_flag_names = set()
+
+        # Add flags from meta flag data (if available)
+        if hasattr(self.harness_client, 'meta_flag_data') and self.harness_client.meta_flag_data:
+            known_flag_names.update(self.harness_client.meta_flag_data.keys())
+
+        # Add flags from flag data (if available)
+        if hasattr(self.harness_client, 'flag_data') and self.harness_client.flag_data:
+            known_flag_names.update(self.harness_client.flag_data.keys())
+
+        # Filter flags_in_code to only include known flags
+        for flag in flags_in_code:
+            if flag in known_flag_names:
+                valid_flags.append(flag)
+            else:
+                logger.debug(f"Filtering out non-flag argument: '{flag}'")
+
+        logger.info(f"Filtered flags: {len(flags_in_code)} total -> {len(valid_flags)} valid flags")
+        return valid_flags
+
     def _run_test(self, test_method, test_name: str, test_results: List[Dict]) -> bool:
         """Helper method to run a single test and handle logging/results"""
         try:
@@ -146,42 +175,46 @@ class CITestRunner:
         logger.info(f"  Feature Flags in Harness: {len(self.harness_client.flag_data)} total")
         logger.info(f"  Commit Hashes: {self.config['commit_before']} -> {self.config['commit_after']}")
 
+        # Filter flags to only include actual flags (removes user IDs and other arguments)
+        filtered_flags = self._filter_valid_flags(self.flags_in_code)
+        logger.info(f"  Validated Feature Flags: {filtered_flags}")
+
         test_results = []
         all_tests_passed = True
 
-        # Define all tests to run
+        # Define all tests to run - use filtered_flags instead of self.flags_in_code
         tests = [
             (
                 lambda: self.flag_validator.check_removal_tags(
-                    self.flags_in_code, self.harness_client.meta_flag_data, self.code_analyzer.flag_file_mapping
+                    filtered_flags, self.harness_client.meta_flag_data, self.code_analyzer.flag_file_mapping
                 ),
                 "Feature Flag removal tag check",
             ),
             (
-                lambda: self.flag_validator.check_flag_count_limit(self.flags_in_code),
+                lambda: self.flag_validator.check_flag_count_limit(filtered_flags),
                 "Feature Flag count check",
             ),
             (
                 lambda: self.threshold_validator.check_last_modified_threshold(
-                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
+                    filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "Feature Flag last modified threshold check",
             ),
             (
                 lambda: self.threshold_validator.check_last_traffic_threshold(
-                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
+                    filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "Feature Flag last traffic threshold check",
             ),
             (
                 lambda: self.threshold_validator.check_last_modified_threshold_100_percent(
-                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
+                    filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "Feature Flag last modified threshold check for 100 percent flags",
             ),
             (
                 lambda: self.threshold_validator.check_last_traffic_threshold_100_percent(
-                    self.flags_in_code, self.harness_client.meta_flag_data, self.harness_client.flag_data
+                    filtered_flags, self.harness_client.meta_flag_data, self.harness_client.flag_data
                 ),
                 "Feature Flag last traffic threshold check for 100 percent flags",
             ),
