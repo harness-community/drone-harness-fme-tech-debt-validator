@@ -44,6 +44,7 @@ steps:
 | `HARNESS_PROJECT_ID` | Harness project identifier (automatically set when using Harness CI) | `myproject` |
 
 ### Optional Configuration
+These can be configured as 'Settings' in Harness CI pipelines without the `PLUGIN_` prefix
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
