@@ -439,8 +439,8 @@ class ThresholdValidator:
                                 rule_bucket_treatments = set()
 
                                 for bucket in buckets:
-                                    bucket_size = bucket.get('size', 0) if isinstance(bucket, dict) else getattr(bucket, '_size', 0)
-                                    bucket_treatment = bucket.get('treatment', '') if isinstance(bucket, dict) else getattr(bucket, '_treatment', '')
+                                    bucket_size = bucket.get("size", 0) if isinstance(bucket, dict) else getattr(bucket, "_size", 0)
+                                    bucket_treatment = bucket.get("treatment", "") if isinstance(bucket, dict) else getattr(bucket, "_treatment", "")
 
                                     rule_total_size += bucket_size
                                     if bucket_treatment:
@@ -489,7 +489,6 @@ class ThresholdValidator:
                             if self.debug:
                                 logger.debug(f"Error checking rules consistency for flag {flag}: {e}")
                             continue
-
 
             if self.debug:
                 logger.debug(f"Flag '{flag}': not at 100% traffic allocation")
