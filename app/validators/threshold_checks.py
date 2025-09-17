@@ -418,16 +418,78 @@ class ThresholdValidator:
                             logger.debug(f"Error checking default rule for flag {flag}: {e}")
                             continue
 
-                    # Check if first rule has 100% allocation
-                    if rules and len(rules) > 0:
-                        first_rule = rules[0]
-                        rule_allocation = getattr(first_rule, "allocation", None)
+                    # Check if all rules and default rule have 100% allocation with same treatment
+                    elif rules and len(rules) > 0:
                         if self.debug:
-                            logger.debug(f"Flag '{flag}': first rule allocation = {rule_allocation}")
-                        if rule_allocation == 100:
+                            logger.debug(f"Flag '{flag}': checking all rules for consistent 100% treatment")
+                        try:
+                            # Collect all treatments from rules
+                            rule_treatments = set()
+                            all_rules_100_percent = True
+
+                            for rule in rules:
+                                # Rules have buckets, not direct allocation
+                                buckets = getattr(rule, "_buckets", [])
+
+                                if self.debug:
+                                    logger.debug(f"Flag '{flag}': rule has {len(buckets)} buckets")
+
+                                # Check if this rule has 100% allocation with single treatment
+                                rule_total_size = 0
+                                rule_bucket_treatments = set()
+
+                                for bucket in buckets:
+                                    bucket_size = bucket.get('size', 0) if isinstance(bucket, dict) else getattr(bucket, '_size', 0)
+                                    bucket_treatment = bucket.get('treatment', '') if isinstance(bucket, dict) else getattr(bucket, '_treatment', '')
+
+                                    rule_total_size += bucket_size
+                                    if bucket_treatment:
+                                        rule_bucket_treatments.add(bucket_treatment)
+
+                                if self.debug:
+                                    logger.debug(f"Flag '{flag}': rule total size = {rule_total_size}, treatments = {rule_bucket_treatments}")
+
+                                # Rule must have 100% allocation and single treatment
+                                if rule_total_size != 100 or len(rule_bucket_treatments) != 1:
+                                    all_rules_100_percent = False
+                                    break
+
+                                # Add the single treatment to our collection
+                                rule_treatments.update(rule_bucket_treatments)
+
+                            # Also check default rule if it exists
+                            default_treatments = set()
+                            default_100_percent = False
+                            if default_rule is not None:
+                                for rule_item in default_rule:
+                                    rule_size = getattr(rule_item, "_size", 0)
+                                    rule_treatment = getattr(rule_item, "_treatment", None)
+
+                                    if self.debug:
+                                        logger.debug(f"Flag '{flag}': default rule item - treatment: {rule_treatment}, size: {rule_size}")
+
+                                    if rule_size == 100:
+                                        default_100_percent = True
+                                        if rule_treatment:
+                                            default_treatments.add(rule_treatment)
+
+                            # Check if all rules are 100% and have same treatment, and default rule matches
+                            if all_rules_100_percent and default_100_percent:
+                                all_treatments = rule_treatments.union(default_treatments)
+                                if len(all_treatments) == 1:  # All treatments are the same
+                                    if self.debug:
+                                        logger.debug(f"Flag '{flag}': all rules and default rule are 100% with same treatment: {all_treatments}")
+                                    return True
+                                elif self.debug:
+                                    logger.debug(f"Flag '{flag}': rules/default have different treatments: {all_treatments}")
+                            elif self.debug:
+                                logger.debug(f"Flag '{flag}': not all rules are 100% or default rule not 100%")
+
+                        except Exception as e:
                             if self.debug:
-                                logger.debug(f"Flag '{flag}': first rule has 100% allocation")
-                            return True
+                                logger.debug(f"Error checking rules consistency for flag {flag}: {e}")
+                            continue
+
 
             if self.debug:
                 logger.debug(f"Flag '{flag}': not at 100% traffic allocation")
