@@ -100,7 +100,24 @@ getTreatment(`flag_${environment}_${feature}`)
 
 // Cross-file imports or runtime values
 getTreatment(flags[Math.random()])
+getTreatment(someObject.flagName)
 ```
+
+### Language-Specific Limitations
+
+**C# Lexical Parsing (vs AST in other languages):**
+- ❌ **Complex object property access**: `someObject.flagName`, `config.flags.primary`
+- ❌ **Method return values**: `getTreatment(GetFlagName())`
+- ❌ **String interpolation**: `$"flag_{environment}_{feature}"`
+- ❌ **Advanced LINQ expressions**: `flags.Where(f => f.IsActive).Select(f => f.Name)`
+- ❌ **Conditional expressions**: `getTreatment(isDev ? "dev-flag" : "prod-flag")`
+- ✅ **Simple variable references**: `string flag = "name"; getTreatment(flag)` ✅ Works
+- ✅ **List initialization**: `new List<string> {"flag1", "flag2"}` ✅ Works
+
+**All Languages:**
+- ❌ **Cross-file imports**: Variables/constants defined in other files
+- ❌ **Database/API values**: Flag names from external sources
+- ❌ **Reflection/dynamic evaluation**: Runtime-generated flag names
 
 ### Smart Filtering
 The plugin extracts all string arguments from method calls, then filters them against your actual Harness flags to eliminate false positives like user IDs.
