@@ -39,10 +39,7 @@ def create_mock_rule_with_buckets(buckets: List[Dict[str, any]]) -> Mock:
     # Convert bucket dicts to match Split.io API structure
     rule._buckets = []
     for bucket in buckets:
-        bucket_obj = {
-            'treatment': bucket.get('treatment', 'on'),
-            'size': bucket.get('size', 100)
-        }
+        bucket_obj = {"treatment": bucket.get("treatment", "on"), "size": bucket.get("size", 100)}
         rule._buckets.append(bucket_obj)
     return rule
 
@@ -103,7 +100,7 @@ def create_mock_mixed_treatment_flag(name: str, **kwargs) -> Mock:
     # Create rules with different treatments
     rules = [
         create_mock_rule_with_buckets([{"treatment": "enabled", "size": 100}]),
-        create_mock_rule_with_buckets([{"treatment": "disabled", "size": 100}])
+        create_mock_rule_with_buckets([{"treatment": "disabled", "size": 100}]),
     ]
     flag_detail._rules = rules
 

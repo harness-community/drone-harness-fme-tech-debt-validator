@@ -9,7 +9,7 @@ from tests.test_utils import (
     create_mock_100_percent_flag_with_rules,
     create_mock_mixed_treatment_flag,
     create_mock_rule_with_buckets,
-    create_mock_flag_detail
+    create_mock_flag_detail,
 )
 
 
@@ -19,11 +19,7 @@ class TestOneHundredPercentDetection:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.config = {
-            "permanent_flags_tag": "permanent",
-            "flag_last_modified_threshold": "90d",
-            "debug": True
-        }
+        self.config = {"permanent_flags_tag": "permanent", "flag_last_modified_threshold": "90d", "debug": True}
         self.validator = ThresholdValidator(self.config)
 
     def test_100_percent_flag_no_rules_default_only(self):
@@ -61,10 +57,7 @@ class TestOneHundredPercentDetection:
         flag_detail._traffic_allocation = 100
 
         # Create rule with split buckets (50/50)
-        rule = create_mock_rule_with_buckets([
-            {"treatment": "enabled", "size": 50},
-            {"treatment": "disabled", "size": 50}
-        ])
+        rule = create_mock_rule_with_buckets([{"treatment": "enabled", "size": 50}, {"treatment": "disabled", "size": 50}])
         flag_detail._rules = [rule]
 
         # Default rule
@@ -140,7 +133,7 @@ class TestOneHundredPercentDetection:
         rules = [
             create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}]),  # Premium users
             create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}]),  # Beta users
-            create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}])   # Enterprise users
+            create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}]),  # Enterprise users
         ]
         flag_detail._rules = rules
 
@@ -161,9 +154,9 @@ class TestOneHundredPercentDetection:
 
         # Create rules with different treatments
         rules = [
-            create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}]),   # Premium users get premium
+            create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}]),  # Premium users get premium
             create_mock_rule_with_buckets([{"treatment": "standard", "size": 100}]),  # Basic users get standard
-            create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}])    # Enterprise users get premium
+            create_mock_rule_with_buckets([{"treatment": "premium", "size": 100}]),  # Enterprise users get premium
         ]
         flag_detail._rules = rules
 
@@ -215,7 +208,7 @@ class TestOneHundredPercentIntegrationWithThresholds:
             "permanent_flags_tag": "permanent",
             "flag_at_100_percent_last_modified_threshold": "1s",  # Very short
             "flag_at_100_percent_last_traffic_threshold": "1s",
-            "debug": True
+            "debug": True,
         }
         self.validator = ThresholdValidator(self.config)
 
@@ -224,22 +217,20 @@ class TestOneHundredPercentIntegrationWithThresholds:
         # Create flag metadata
         flag_meta_data = {
             "regular-flag": create_mock_flag_meta("regular-flag", ["frontend"]),
-            "hundred-percent-flag": create_mock_flag_meta("hundred-percent-flag", ["backend"])
+            "hundred-percent-flag": create_mock_flag_meta("hundred-percent-flag", ["backend"]),
         }
 
         # Create flag data - one 100%, one not
         old_timestamp = 1000000000  # Very old timestamp
         flag_data = [
             create_mock_flag_detail("regular-flag", lastUpdateTime=old_timestamp, traffic_allocation=50),
-            create_mock_100_percent_flag_detail("hundred-percent-flag", "enabled", lastUpdateTime=old_timestamp)
+            create_mock_100_percent_flag_detail("hundred-percent-flag", "enabled", lastUpdateTime=old_timestamp),
         ]
 
         flags_in_code = ["regular-flag", "hundred-percent-flag"]
 
         # Run 100% modified threshold check
-        failed_flags = self.validator._run_single_threshold_check(
-            flags_in_code, flag_meta_data, flag_data, "1s", "last_update_time", True
-        )
+        failed_flags = self.validator._run_single_threshold_check(flags_in_code, flag_meta_data, flag_data, "1s", "last_update_time", True)
 
         # Only the 100% flag should be in failed flags
         failed_flag_names = [f["flag"] for f in failed_flags]
