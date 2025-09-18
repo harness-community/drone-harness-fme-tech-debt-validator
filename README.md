@@ -204,4 +204,4 @@ pytest tests/ --cov=app --cov-report=html
 
 ## License
 
-This project is available under the [MIT License](LICENSE).
+This project is available under the [Apache 2.0](LICENSE).
