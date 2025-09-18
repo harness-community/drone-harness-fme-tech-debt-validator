@@ -6,3 +6,6 @@
 *.pyc
 *.pyo
 *.pyd
+.harness
+.black
+.claude
