@@ -5,9 +5,9 @@ import sys
 import logging
 from typing import Dict, List
 
-from formatters import ErrorMessageFormatter
-from utils import HarnessApiClient, GitCodeAnalyzer
-from validators import FlagValidator, ThresholdValidator
+from app.formatters import ErrorMessageFormatter
+from app.utils import HarnessApiClient, GitCodeAnalyzer
+from app.validators import FlagValidator, ThresholdValidator
 
 # Configure logging
 debug_enabled = os.getenv("PLUGIN_DEBUG", "false").lower() in ("true", "1", "yes")

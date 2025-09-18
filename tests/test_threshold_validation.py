@@ -3,7 +3,11 @@
 import pytest
 from unittest.mock import Mock
 from app.validators.threshold_checks import ThresholdValidator
-from tests.test_utils import create_mock_flag_meta, create_mock_flag_detail
+from tests.test_utils import (
+    create_mock_flag_meta,
+    create_mock_flag_detail,
+    create_mock_100_percent_flag_detail
+)
 
 
 @pytest.mark.unit
@@ -182,27 +186,24 @@ class TestPermanentFlagIntegration:
         # Create very old flag details (would fail all threshold checks)
         very_old_timestamp = 1000000000  # Very old timestamp
         flag_data = [
-            create_mock_flag_detail(
+            create_mock_100_percent_flag_detail(
                 "permanent-flag-1",
+                "on",
                 lastUpdateTime=very_old_timestamp,
-                lastTrafficReceivedAt=very_old_timestamp,
-                traffic_allocation=100,
-                default_rule=[Mock(_size=100, _treatment="on")],
+                lastTrafficReceivedAt=very_old_timestamp
             ),
-            create_mock_flag_detail(
+            create_mock_100_percent_flag_detail(
                 "permanent-flag-2",
+                "on",
                 lastUpdateTime=very_old_timestamp,
-                lastTrafficReceivedAt=very_old_timestamp,
-                traffic_allocation=100,
-                default_rule=[Mock(_size=100, _treatment="on")],
+                lastTrafficReceivedAt=very_old_timestamp
             ),
             create_mock_flag_detail("regular-flag-1", lastUpdateTime=very_old_timestamp, lastTrafficReceivedAt=very_old_timestamp),
-            create_mock_flag_detail(
+            create_mock_100_percent_flag_detail(
                 "regular-flag-2",
+                "on",
                 lastUpdateTime=very_old_timestamp,
-                lastTrafficReceivedAt=very_old_timestamp,
-                traffic_allocation=100,
-                default_rule=[Mock(_size=100, _treatment="on")],
+                lastTrafficReceivedAt=very_old_timestamp
             ),
         ]
 

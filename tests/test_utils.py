@@ -33,6 +33,89 @@ def create_mock_flag_detail(name: str, **kwargs) -> Mock:
     return flag_detail
 
 
+def create_mock_rule_with_buckets(buckets: List[Dict[str, any]]) -> Mock:
+    """Create a mock rule object with buckets."""
+    rule = Mock()
+    # Convert bucket dicts to match Split.io API structure
+    rule._buckets = []
+    for bucket in buckets:
+        bucket_obj = {
+            'treatment': bucket.get('treatment', 'on'),
+            'size': bucket.get('size', 100)
+        }
+        rule._buckets.append(bucket_obj)
+    return rule
+
+
+def create_mock_100_percent_flag_detail(name: str, treatment: str = "on", **kwargs) -> Mock:
+    """Create a mock flag detail object at 100% allocation."""
+    flag_detail = Mock()
+    flag_detail.name = name
+    flag_detail.last_update_time = kwargs.get("lastUpdateTime", 1640995200)
+    flag_detail.last_traffic_received_at = kwargs.get("lastTrafficReceivedAt", 1640995200)
+    flag_detail._traffic_allocation = 100
+
+    # Create default rule with 100% allocation
+    default_rule_item = Mock()
+    default_rule_item._size = 100
+    default_rule_item._treatment = treatment
+    flag_detail._default_rule = [default_rule_item]
+
+    # Empty rules for simple 100% case
+    flag_detail._rules = kwargs.get("rules", [])
+
+    return flag_detail
+
+
+def create_mock_100_percent_flag_with_rules(name: str, treatment: str = "on", **kwargs) -> Mock:
+    """Create a mock flag detail with rules that all have 100% allocation for same treatment."""
+    flag_detail = Mock()
+    flag_detail.name = name
+    flag_detail.last_update_time = kwargs.get("lastUpdateTime", 1640995200)
+    flag_detail.last_traffic_received_at = kwargs.get("lastTrafficReceivedAt", 1640995200)
+    flag_detail._traffic_allocation = 100
+
+    # Create rules with 100% buckets
+    rules = []
+    num_rules = kwargs.get("num_rules", 2)
+    for _ in range(num_rules):
+        rule = create_mock_rule_with_buckets([{"treatment": treatment, "size": 100}])
+        rules.append(rule)
+    flag_detail._rules = rules
+
+    # Create default rule with same treatment and 100% allocation
+    default_rule_item = Mock()
+    default_rule_item._size = 100
+    default_rule_item._treatment = treatment
+    flag_detail._default_rule = [default_rule_item]
+
+    return flag_detail
+
+
+def create_mock_mixed_treatment_flag(name: str, **kwargs) -> Mock:
+    """Create a mock flag with different treatments across rules (NOT 100%)."""
+    flag_detail = Mock()
+    flag_detail.name = name
+    flag_detail.last_update_time = kwargs.get("lastUpdateTime", 1640995200)
+    flag_detail.last_traffic_received_at = kwargs.get("lastTrafficReceivedAt", 1640995200)
+    flag_detail._traffic_allocation = 100
+
+    # Create rules with different treatments
+    rules = [
+        create_mock_rule_with_buckets([{"treatment": "enabled", "size": 100}]),
+        create_mock_rule_with_buckets([{"treatment": "disabled", "size": 100}])
+    ]
+    flag_detail._rules = rules
+
+    # Default rule
+    default_rule_item = Mock()
+    default_rule_item._size = 100
+    default_rule_item._treatment = "enabled"
+    flag_detail._default_rule = [default_rule_item]
+
+    return flag_detail
+
+
 def create_mock_flag_meta(name: str, tags: List[str] = None) -> Mock:
     """Create a mock flag metadata object."""
     flag_meta = Mock()
