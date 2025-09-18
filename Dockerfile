@@ -21,12 +21,15 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app source code to .
+# Copy app source code to myapp (Harness CI requirement)
 COPY app/ /myapp/
 
-# Copy test files and config
+# Copy test files and config (optional, for debugging)
 COPY tests/ /mytests/
 COPY pytest.ini /mytests/
+
+# Set Python path to include myapp directory for relative imports
+ENV PYTHONPATH=/myapp:/
 
 # Entry point to run the CI test script
 ENTRYPOINT ["python", "/myapp/main.py"]

@@ -3,7 +3,11 @@
 import json
 import logging
 from typing import Dict, List
-from app.formatters import ErrorMessageFormatter
+
+try:
+    from formatters import ErrorMessageFormatter
+except ImportError:
+    from app.formatters import ErrorMessageFormatter
 
 logger = logging.getLogger(__name__)
 

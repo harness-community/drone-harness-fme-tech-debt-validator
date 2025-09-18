@@ -4,7 +4,11 @@ import logging
 import requests
 from typing import Dict
 from splitapiclient.main import get_client
-from app.formatters import ErrorMessageFormatter
+
+try:
+    from formatters import ErrorMessageFormatter
+except ImportError:
+    from app.formatters import ErrorMessageFormatter
 
 logger = logging.getLogger(__name__)
 
