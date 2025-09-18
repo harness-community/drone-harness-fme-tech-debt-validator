@@ -2,8 +2,18 @@
 
 ## Harness Feature Management CI Tech Debt Plugin
 
+
+
+
 **This is now managed in the harness_community github repo**
 [FME Tech Debt CI Plugin](https://github.com/harness-community/drone-harness-fme-tech-debt-validator#)
+
+
+
+
+
+
+
 
 
 A Harness CI plugin that analyzes code changes for feature flag usage during CI and enforces governance policies to prevent problematic feature flags from being deployed.
